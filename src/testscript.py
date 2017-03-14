@@ -1,10 +1,10 @@
 from Quaternion import Quaternion
-from numpy import matrix, rad2deg, deg2rad
+from numpy import matrix
 from Strapdown import Strapdown
-import math 
 from MathLib import toValue, toVector
 from Bearing import Bearing
 from Velocity import Velocity
+from Position import Position
 
 phi = 1
 theta = 1 
@@ -26,7 +26,7 @@ s = Strapdown()
 b = Bearing()
 # print(b.bearing, s.velocity)
 b.initBearing(matrix([0.1,0.2,10.0]), matrix([100,200,5]))
-print(b.bearing)
+print(b.values)
 
 print("Eulerwinkel aus Quaternion", q.getEulerAngles()) #Test Euler --> Quat --> update --> Euler ?
 neu = b.update(toVector(wx,wy,wz))
@@ -39,6 +39,11 @@ print(vector)
 
 acc = matrix([3,0.1,2])
 vel = Velocity()
-print(vel.velocity)
+print('v0',vel.values)
 vel.update(acc, q)
-print(vel.velocity)
+print('v1',vel.values)
+
+pos = Position()
+print('p0',pos.values)
+pos.update(vel)
+print('p1',pos.values)

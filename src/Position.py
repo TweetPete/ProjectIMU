@@ -1,11 +1,10 @@
 from MathLib import toVector
-from Velocity import Velocity as v
 from Settings import DT
 
 class Position(object):
     
-    def __init__(self):
-        self.position = toVector(0,0,0)
+    def __init__(self, vector = toVector(0.,0.,0.)):
+        self.values = vector
         
-    def update(self):
-        self.position += DT*v.velocity
+    def update(self,velocity):
+        self.values += DT*velocity.values

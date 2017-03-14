@@ -4,14 +4,15 @@
 from math import sin, cos, pow, atan2, asin
 from numpy import matrix, insert
 from MathLib import pythagoras, toVector, toValue, mvMultiplication
+from Settings import DT
 
 class Quaternion (object):
 
-    def __init__(self, rotationRate):
+    def __init__(self, euler = toVector(0.,0.,0.)):
         """ Quaternion es initiated by Euler angles
             the angles are given in radians
         """
-        phi, theta, psi = toValue(rotationRate)
+        phi, theta, psi = toValue(euler)
         
         ph2 = phi / 2
         th2 = theta / 2
@@ -58,7 +59,7 @@ class Quaternion (object):
             the rotation rate is a 1x3 vector - wx, wy, wz
             approximated quaternion differential equation
         """
-        w = rotationRate  # changing rate of the orientation vector - w * T (wo earth rotation rate and transport rate)
+        w = rotationRate*DT  # changing rate of the orientation vector - w * T (wo earth rotation rate and transport rate)
         wx, wy, wz = toValue(w)
         norm = pythagoras(wx, wy, wz)
         

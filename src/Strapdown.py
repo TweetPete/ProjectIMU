@@ -1,22 +1,47 @@
 """ class Strapdown generates bearing, velocity and position from 9 degree IMU readings
 """
 
-from numpy import matrix
 from Quaternion import Quaternion
 from Bearing import Bearing
 from Velocity import Velocity
+from Position import Position
 from MathLib import toVector
 
 class Strapdown(object):
-    def __init__(self):
+    def __init__(self, acceleration, magneticField):
         """ creates Strapdown object which includes the current bearing, velocity and position
             bearing (phi, theta, psi) in degrees, velocity (ax, ay, az) in m/s, position (x,y,z) in m
         """
                         
-        self.bearing = Bearing()
-        self.velocity = Velocity()
-        self.position = matrix([0,0,0])
-        self.quaternion = Quaternion(toVector(0,0,0))
+        self.bearing = Bearing(acceleration, magneticField)
+        self.quaternion = Quaternion(self.bearing.values)
+        self.velocity = Velocity() # vector (if known)
+        self.position = Position() # or GNSS.getPos()
+        
+def main():
+    #read sensors
+    acceleration = toVector(1.,2.,9.81)
+    magneticField = toVector(3.,5.,7.)
+    s = Strapdown(acceleration, magneticField)
+    print('bearing\n',s.bearing.values)
+    print('velocity\n',s.velocity.values)
+    print('position\n',s.position.values)
+    
+    rotationRate = toVector(0.1,0.2,0.1)
+    acceleration = toVector(1.5, 2.4, 8.75)
+    
+    s.quaternion.update(rotationRate)
+    s.bearing.values = s.quaternion.getEulerAngles()
+    s.velocity.update(acceleration, s.quaternion)
+    s.position.update(s.velocity)
+    
+    print('bearing\n',s.bearing.values)
+    print('velocity\n',s.velocity.values)
+    print('position\n',s.position.values)
+    
+if __name__ == "__main__":
+    main()         
         
 
+    
         
