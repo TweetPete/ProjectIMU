@@ -13,7 +13,7 @@ class Bearing_test(unittest.TestCase):
         b = Bearing(acc,mag)
         self.assertAlmostEqual(0.197 ,b.values[0], delta=0.01)
         self.assertAlmostEqual(-0.098, b.values[1], delta=0.01)
-        self.assertAlmostEqual(-1.101, b.values[2], delta=0.01)
+        self.assertAlmostEqual(-1.285, b.values[2], delta=0.01)
         
     def test_update(self):
         acc = toVector(0., 0., 10.)

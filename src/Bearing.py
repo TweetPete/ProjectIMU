@@ -9,12 +9,16 @@ class Bearing(object):
             accelaration in m/s2 and magnetic field in gauss
         """
         ax, ay, az = toValue(acceleration)
-        mx, my, _ = toValue(magneticField)
+        mx, my, mz = toValue(magneticField)
         
         phi = atan2(ay, az)
         if ay == 0 and az == 0: theta = 0 #axes wo Earth acceleration 
         else: theta = tan(-ax / pythagoras(ay, az))
-        psi = atan2(-mx, my)  # +- D Deklinationswinkel # nur gültig wenn eben
+        
+        # transformation to horizontal coordinate system - psi = 0
+        mxh = mx*cos(theta) + my *sin(phi)*sin(theta)+ mz *cos(phi)*sin(theta)
+        myh = my*cos(phi) - mz*sin(phi)
+        psi = atan2(-mxh, myh)  # +- D Deklinationswinkel 
         
         self.values = toVector(phi, theta, psi)
 
