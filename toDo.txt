@@ -1,0 +1,13 @@
+MathLib - toVector
+		- toValue
+		für längere Vektoren
+
+Strapdown als Gesamtheit 
+
+Unittests
+
+Erdbeschleunigung in Abhängigkeit von Lat & Lon
+
+Koordinatentransfo LatLon2 navigationskoord
+
+update Lage < acc + Drehrate

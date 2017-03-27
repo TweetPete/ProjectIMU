@@ -1,13 +1,14 @@
 from math import sqrt
 from numpy import shape, matrix, size, long
 
+
 def pythagoras(*sites):
     res = 0
     for i in sites:
         res += i ** 2
     return sqrt(res)
 
-def toVector(a, b, c, d = 'none'):
+def toVector(a, b, c, d='none'):
     assert d == 'none' or isinstance(d, (int, long, float)), "Not a valid input for d"
     if isinstance(d, (int, long, float)) :
         vector = matrix([a, b, c, d])

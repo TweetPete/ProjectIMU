@@ -1,0 +1,6 @@
+Strapdown: Mitteln der Lage aus Drehratensensor + Beschleunigungssensor möglich ? 
+		   Korrektur der Sensorbiase an welcher Stelle ?
+		   
+Magnetometer Verarbeitung im Kalman Filter ?
+
+Taktrate Kalman.Propagation und Estimation ?

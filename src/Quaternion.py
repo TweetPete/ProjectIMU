@@ -1,14 +1,15 @@
 """ class Quaternion describes the relation between 2 coordinate systems using 4 parameters
 """
 
-from math import sin, cos, pow, atan2, asin
-from numpy import matrix, insert
 from MathLib import pythagoras, toVector, toValue, mvMultiplication
 from Settings import DT
+from math import sin, cos, pow, atan2, asin
+from numpy import matrix, insert
+
 
 class Quaternion (object):
 
-    def __init__(self, euler = toVector(0.,0.,0.)):
+    def __init__(self, euler=toVector(0., 0., 0.)):
         """ Quaternion es initiated by Euler angles
             the angles are given in radians
         """
@@ -48,9 +49,9 @@ class Quaternion (object):
 #         psi = atan2(2*(self.q1*self.q2 - self.q0*self.q3), 2*self.q0**2 - 1 + 2*self.q1**2)
     
         # Wikipedia
-        phi = atan2(2*(self.q0*self.q1 + self.q2*self.q3), 1 - 2*(self.q1**2 + self.q2**2))
-        theta = asin(2*(self.q0*self.q2 - self.q3*self.q1))
-        psi = atan2(2*(self.q0*self.q3 + self.q1*self.q2), 1 - 2*(self.q2**2 + self.q3**2))
+        phi = atan2(2 * (self.q0 * self.q1 + self.q2 * self.q3), 1 - 2 * (self.q1 ** 2 + self.q2 ** 2))
+        theta = asin(2 * (self.q0 * self.q2 - self.q3 * self.q1))
+        psi = atan2(2 * (self.q0 * self.q3 + self.q1 * self.q2), 1 - 2 * (self.q2 ** 2 + self.q3 ** 2))
         
         return toVector(phi, theta, psi)
     
@@ -59,7 +60,7 @@ class Quaternion (object):
             the rotation rate is a 1x3 vector - wx, wy, wz
             approximated quaternion differential equation
         """
-        w = rotationRate*DT  # changing rate of the orientation vector - w * T (wo earth rotation rate and transport rate)
+        w = rotationRate * DT  # changing rate of the orientation vector - w * T (wo earth rotation rate and transport rate)
         wx, wy, wz = toValue(w)
         norm = pythagoras(wx, wy, wz)
         
