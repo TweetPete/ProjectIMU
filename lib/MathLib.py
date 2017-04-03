@@ -1,7 +1,6 @@
 from math import sqrt
 from numpy import shape, matrix, size, long
 
-
 def pythagoras(*sites):
     res = 0
     for i in sites:

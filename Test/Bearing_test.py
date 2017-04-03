@@ -1,6 +1,5 @@
 from Bearing import Bearing
 from MathLib import toVector
-from Quaternion import Quaternion
 from Settings import DT
 import unittest
 

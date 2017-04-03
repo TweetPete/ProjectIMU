@@ -1,6 +1,6 @@
 from MathLib import pythagoras
 from numpy import deg2rad, rad2deg
-from examples.GeoLib import earthCurvature
+from GeoLib import earthCurvature
 from math import tan
 ve = 100 #km/h
 vn = 100 #km/h^
