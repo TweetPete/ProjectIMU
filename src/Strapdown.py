@@ -6,6 +6,8 @@ from MathLib import toVector
 from Position import Position
 from Quaternion import Quaternion
 from Velocity import Velocity
+from Kalman import Kalman
+from numpy import diag
 
 
 class Strapdown(object):
@@ -39,6 +41,11 @@ def main():
     print('bearing\n', s.bearing.values)
     print('velocity\n', s.velocity.values)
     print('position\n', s.position.values)
+    
+    K = Kalman()
+    K.timeUpdate(s.quaternion)
+    print(K.bearingError, K.gyroBias)
+    print(diag(K.P))
     
 if __name__ == "__main__":
     main()         
