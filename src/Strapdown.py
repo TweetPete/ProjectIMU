@@ -44,8 +44,8 @@ def main():
     
     K = Kalman()
     K.timeUpdate(s.quaternion)
-    print(K.bearingError, K.gyroBias)
-    print(diag(K.P))
+    K.measurementUpdate(acceleration, magneticField, s.quaternion)
+    
     
 if __name__ == "__main__":
     main()         
