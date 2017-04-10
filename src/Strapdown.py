@@ -7,7 +7,6 @@ from Position import Position
 from Quaternion import Quaternion
 from Velocity import Velocity
 from Kalman import Kalman
-from numpy import diag
 
 
 class Strapdown(object):
@@ -20,7 +19,7 @@ class Strapdown(object):
         self.quaternion = Quaternion(self.bearing.values)
         self.velocity = Velocity()  # vector (if known)
         self.position = Position()  # or GNSS.getPos()
-        
+        #toVector(52.521918/180*pi, 13.413215\180*pi, 100.)
 def main():
     # read sensors
     acceleration = toVector(1., 2., 9.81)

@@ -1,3 +1,6 @@
+""" Mathematical Library
+"""
+
 from math import sqrt
 from numpy import shape, matrix, size, long
 

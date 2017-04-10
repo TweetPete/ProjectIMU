@@ -1,3 +1,6 @@
+""" contains commun variables used during the Strapdown-algorithm
+"""
+
 from MathLib import toVector
 
 g = 9.81

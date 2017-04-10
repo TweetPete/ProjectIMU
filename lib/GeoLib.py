@@ -1,3 +1,6 @@
+""" Geodetic Library
+""" 
+
 from math import sqrt, sin
 
 def earthCurvature(a,f,lat):

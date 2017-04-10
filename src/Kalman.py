@@ -1,9 +1,18 @@
+""" Kalman Filter using accelerometer and magnetometer measurements to compensate bearing-error und gyro-bias
+    closed-loop-Error-state
+"""
+
 from numpy import zeros, eye, vstack, power, diag
 from MathLib import toVector
 from Settings import DT, g
 class Kalman(object):
+
     
     def __init__(self):
+        """ class contains current state(a priori/a posteriori) 
+            and system-noise and measurement-noise
+            vcv-matrix P is initialised as not trustworthy 
+        """
         self.bearingError = toVector(0.,0.,0.) #stateElements
         self.gyroBias = toVector(0.,0.,0.)
         
@@ -16,13 +25,17 @@ class Kalman(object):
         self.P = eye(6, 6)*10000000000
         
     def timeUpdate(self,quaternion):
-        rotationMatrix = quaternion.getRotationMatrix()
+        """ requires current quaternion to compute linearized system-modell at point x0
+            state a priori is propagated w/o noise 
+            system-noise is uncorrelated
+        """
+        rotationMatrix = quaternion.getRotationMatrix()# derivation at point x0(current bearing)
         F = zeros(shape=(6,6))
         F[0:3,3:6] = rotationMatrix # Jacobi-Matrix
         #print("F = \n", F)
         
         G = zeros(shape =(6,6))
-        G[0:3,0:3] = rotationMatrix # derivation at point x0(current bearing)
+        G[0:3,0:3] = rotationMatrix 
         G[3:6,3:6] = eye(3,3)
         #print("G = \n", G)
         
@@ -42,6 +55,10 @@ class Kalman(object):
         print("VKV-Matrix a priori = :\n", self.P)
         
     def measurementUpdate(self, acceleration, magneticField, quaternion):
+        """ acceleration and magneticField-measurements are needed to calculate innovation z
+            measuremnt-noise is uncorrelated
+            measurement-matrix H is defined at x0
+        """
         rotationMatrix = quaternion.getRotationMatrix()
         H1 = zeros(shape =(3,6))
         H1[0,1] =-g
@@ -59,11 +76,13 @@ class Kalman(object):
         rr = power(noise,2)
         R = diag(rr.A[:,0])
         #print("R =:\n", R)
-        S = H*self.P*H.transpose()+R
+        
+        h = eye(6, 6)+H*DT # Transitionmatrix f = integral(F)
+        S = h*self.P*h.transpose()+R
         print("S =:\n", S)
-        K = self.P*H.transpose()*S.I
+        K = self.P*h.transpose()*S.I
         print("K =:\n", K)
-        self.P = self.P - K*H*self.P
+        self.P = self.P - K*h*self.P
         print("VKV-Matrix a posteriori =:\n",self.P)
         
         bearing = quaternion.getEulerAngles() 
