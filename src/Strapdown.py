@@ -1,11 +1,13 @@
 """ class Strapdown generates bearing, velocity and position from 9 degree IMU readings
 """
 
-from Quaternion import Quaternion
 from Bearing import Bearing
-from Velocity import Velocity
-from Position import Position
 from MathLib import toVector
+from Position import Position
+from Quaternion import Quaternion
+from Velocity import Velocity
+from Kalman import Kalman
+
 
 class Strapdown(object):
     def __init__(self, acceleration, magneticField):
@@ -15,19 +17,19 @@ class Strapdown(object):
                         
         self.bearing = Bearing(acceleration, magneticField)
         self.quaternion = Quaternion(self.bearing.values)
-        self.velocity = Velocity() # vector (if known)
-        self.position = Position() # or GNSS.getPos()
-        
+        self.velocity = Velocity()  # vector (if known)
+        self.position = Position()  # or GNSS.getPos()
+        #toVector(52.521918/180*pi, 13.413215\180*pi, 100.)
 def main():
-    #read sensors
-    acceleration = toVector(1.,2.,9.81)
-    magneticField = toVector(3.,5.,7.)
+    # read sensors
+    acceleration = toVector(1., 2., 9.81)
+    magneticField = toVector(3., 5., 7.)
     s = Strapdown(acceleration, magneticField)
-    print('bearing\n',s.bearing.values)
-    print('velocity\n',s.velocity.values)
-    print('position\n',s.position.values)
+    print('bearing\n', s.bearing.values)
+    print('velocity\n', s.velocity.values)
+    print('position\n', s.position.values)
     
-    rotationRate = toVector(0.1,0.2,0.1)
+    rotationRate = toVector(0.1, 0.2, 0.1)
     acceleration = toVector(1.5, 2.4, 8.75)
     
     s.quaternion.update(rotationRate)
@@ -35,9 +37,14 @@ def main():
     s.velocity.update(acceleration, s.quaternion)
     s.position.update(s.velocity)
     
-    print('bearing\n',s.bearing.values)
-    print('velocity\n',s.velocity.values)
-    print('position\n',s.position.values)
+    print('bearing\n', s.bearing.values)
+    print('velocity\n', s.velocity.values)
+    print('position\n', s.position.values)
+    
+    K = Kalman()
+    K.timeUpdate(s.quaternion)
+    K.measurementUpdate(acceleration, magneticField, s.quaternion)
+    
     
 if __name__ == "__main__":
     main()         

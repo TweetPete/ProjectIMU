@@ -1,0 +1,11 @@
+Strapdown: Mitteln der Lage aus Drehratensensor + Beschleunigungssensor möglich ? 
+		   Korrektur der Sensorbiase an welcher Stelle ?
+		   
+Magnetometer Verarbeitung im Kalman Filter ?
+	Bias schätzen ?
+
+Taktrate Kalman.Propagation und Estimation ?
+
+Korrelation des Rauschens zwischen Beschleunigungssensorachsen ? 
+	im Systemrauschen ? 
+	

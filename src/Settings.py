@@ -1,4 +1,8 @@
+""" contains commun variables used during the Strapdown-algorithm
+"""
+
 from MathLib import toVector
 
+g = 9.81
 DT = 1 / 400  # sek
-G = toVector(0, 0, 9.81)  # m/s2
+G = toVector(0, 0, g)  # m/s2
