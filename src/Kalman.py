@@ -3,8 +3,8 @@
 """
 
 from numpy import zeros, eye, vstack, power, diag
-from MathLib import toVector
-from Settings import DT, g
+from MathLib import toVector, toValue
+from Settings import DT, g, EARTHMAGFIELD
 class Kalman(object):
 
     
@@ -42,7 +42,9 @@ class Kalman(object):
         state = vstack((self.bearingError, self.gyroBias))
         noise = vstack((self.gyroNoise, self.gyroBiasNoise))
         
-        newState = F*state #+G*noise
+        f = eye(6, 6)+F*DT # Transitionmatrix f 
+        
+        newState = f*state #+G*noise
         print("Zustandsvektor a priori = :\n",newState)
         self.bearingError = newState[0:3]
         self.gyroBias = newState[3:6]
@@ -50,43 +52,49 @@ class Kalman(object):
         qq = power(noise,2)
         Q = diag(qq.A[:,0]) #uncorrelated 
         
-        f = eye(6, 6)+F*DT # Transitionmatrix f = integral(F)
         self.P = f*self.P*f.transpose() + G*Q*G.transpose()
         print("VKV-Matrix a priori = :\n", self.P)
         
     def measurementUpdate(self, acceleration, magneticField, quaternion):
         """ acceleration and magneticField-measurements are needed to calculate innovation z
-            measuremnt-noise is uncorrelated
+            measurement-noise is uncorrelated
             measurement-matrix H is defined at x0
         """
         rotationMatrix = quaternion.getRotationMatrix()
         H1 = zeros(shape =(3,6))
         H1[0,1] =-g
+        H1[0,4] =-g
         H1[1,0] = g
+        H1[1,3] = g
         H1 = -rotationMatrix.transpose()*H1
         
+        he, hn, _ = toValue(EARTHMAGFIELD)
+        
         H2 = zeros(shape=(3,6))
-        H2[0,2] = 1
-        H2[1,2] =-1
+        H2[0,2] = he
+        H2[0,5] = he
+        H2[1,2] =-hn
+        H2[1,5] =-hn
         H2 = rotationMatrix.transpose()*H2
         H = vstack((H1,H2))
 
-        print("Messmatrix H =:\n",H)
+        print("Messmatrix H =:\n",H) 
         noise = vstack((self.accelNoise, self.magnetoNoise))
         rr = power(noise,2)
         R = diag(rr.A[:,0])
         #print("R =:\n", R)
         
-        h = eye(6, 6)+H*DT # Transitionmatrix f = integral(F)
-        S = h*self.P*h.transpose()+R
+        #h = eye(6, 6)+H*DT # Transitionmatrix h = integral(F)
+        S = H*self.P*H.transpose()+R
         print("S =:\n", S)
-        K = self.P*h.transpose()*S.I
+        K = self.P*H.transpose()*S.I
         print("K =:\n", K)
-        self.P = self.P - K*h*self.P
+        self.P = self.P - K*H*self.P # maybe use Josephs-Form
         print("VKV-Matrix a posteriori =:\n",self.P)
         
-        bearing = quaternion.getEulerAngles() 
-        z0 = H[:,0:3]*bearing # h0(x0, r = 0)
+        bearing = quaternion.getEulerAngles()
+        x0 = vstack((bearing, toVector(0.,0.,0.))) #gyro bias = 0
+        z0 = vstack((H1*x0,rotationMatrix.transpose()*EARTHMAGFIELD)) # h0(x0, r = 0)
         print("z0 =:\n",z0)
         dz = vstack((acceleration,magneticField)) - z0
         print("dz =:\n",dz)

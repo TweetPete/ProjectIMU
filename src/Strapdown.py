@@ -19,7 +19,8 @@ class Strapdown(object):
         self.quaternion = Quaternion(self.bearing.values)
         self.velocity = Velocity()  # vector (if known)
         self.position = Position()  # or GNSS.getPos()
-        #toVector(52.521918/180*pi, 13.413215\180*pi, 100.)
+        # toVector(52.521918/180*pi, 13.413215\180*pi, 100.)
+        
 def main():
     # read sensors
     acceleration = toVector(1., 2., 9.81)
@@ -28,19 +29,19 @@ def main():
     print('bearing\n', s.bearing.values)
     print('velocity\n', s.velocity.values)
     print('position\n', s.position.values)
-    
+        
     rotationRate = toVector(0.1, 0.2, 0.1)
     acceleration = toVector(1.5, 2.4, 8.75)
-    
+        
     s.quaternion.update(rotationRate)
     s.bearing.values = s.quaternion.getEulerAngles()
     s.velocity.update(acceleration, s.quaternion)
     s.position.update(s.velocity)
-    
+        
     print('bearing\n', s.bearing.values)
     print('velocity\n', s.velocity.values)
     print('position\n', s.position.values)
-    
+        
     K = Kalman()
     K.timeUpdate(s.quaternion)
     K.measurementUpdate(acceleration, magneticField, s.quaternion)

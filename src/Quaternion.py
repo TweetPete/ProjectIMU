@@ -10,7 +10,7 @@ from numpy import matrix, insert
 class Quaternion (object):
 
     def __init__(self, euler=toVector(0., 0., 0.)):
-        """ Quaternion es initiated by Euler angles
+        """ Quaternion is initiated by Euler angles
             the angles are given in radians using ZYX-convention
         """
         phi, theta, psi = toValue(euler)
@@ -52,7 +52,7 @@ class Quaternion (object):
     
     def getEulerAngles(self):
         """ calculates Euler angles from the current Quaternion
-            result is given in a 1x3 vector 
+            result is given in a 3x1 vector in radians
         """
 #         phi = atan2(2*(self.q2*self.q3 - self.q0*self.q1), 2*self.q0**2 - 1 + 2*self.q3**2)
 #         theta = -atan2(2*(self.q1*self.q3 + self.q0*self.q2), sqrt(1-(2*self.q1*self.q3 + 2*self.q0*self.q2)**2))
@@ -67,7 +67,7 @@ class Quaternion (object):
     
     def update(self, rotationRate):
         """ updates the quaternion via the rotation of the last period
-            the rotation rate is a 1x3 vector - wx, wy, wz
+            the rotation rate is a 3x1 vector - wx, wy, wz
             approximated quaternion differential equation
         """
         w = rotationRate * DT  # changing rate of the orientation vector - w * T (wo earth rotation rate and transport rate)
