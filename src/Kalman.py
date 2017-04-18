@@ -22,7 +22,7 @@ class Kalman(object):
         self.accelNoise = toVector(0.0003,0.0003,0.0003) #SensorNoise/MeasurementNoise
         self.magnetoNoise = toVector(0.0002,0.0002,0.0002)
         
-        self.P = eye(6, 6)*10000000000
+        self.P = eye(6, 6)*100
         
     def timeUpdate(self,quaternion):
         """ requires current quaternion to compute linearized system-modell at point x0
@@ -87,6 +87,7 @@ class Kalman(object):
         #h = eye(6, 6)+H*DT # Transitionmatrix h = integral(F)
         S = H*self.P*H.transpose()+R
         print("S =:\n", S)
+        test = S.I
         K = self.P*H.transpose()*S.I
         print("K =:\n", K)
         self.P = self.P - K*H*self.P # maybe use Josephs-Form
@@ -103,4 +104,6 @@ class Kalman(object):
         print("innovation = :\n", innov)
         newState = oldState+K*innov
         print("Zustandsvektor a posteriori = :\n", newState)
+        self.bearingError = newState[0:3]
+        self.gyroBias = newState[3:6]
         
