@@ -9,6 +9,7 @@ from Quaternion import Quaternion
 from Velocity import Velocity
 from Kalman import Kalman
 from FileManager import FileManager
+from Settings import DT
 
 
 class Strapdown(object):
@@ -26,24 +27,33 @@ class Strapdown(object):
 def main():
     # read sensors
     f = FileManager()
-    d = f.readFile()
-
-    for i in range(1,2):   
-        print(i) 
-        acceleration = toVector(d[i,0],d[i,1],d[i,2])
-        rotationRate = toVector(d[i,3],d[i,4],d[i,5])*pi/180
-        magneticField = toVector(d[i,6],d[i,7],d[i,8])
+    filePath = "data\Sample9DoF_R_Session1_Shimmer_B663_Calibrated_SD.csv"
+    d = f.readFile(filePath)
+    
+    i = 1
+    acceleration = toVector(d[i,0],d[i,1],d[i,2])
+    rotationRate = toVector(d[i,3],d[i,4],d[i,5])*pi/180 
+    magneticField = toVector(d[i,6],d[i,7],d[i,8])*100 #*4.95283270677+ 1.67182206381
         
         #acceleration = toVector(1., 2., 9.81)
         #magneticField = toVector(3., 5., 7.)
-        s = Strapdown(acceleration, magneticField)
-        print('bearing\n', s.bearing.values)
-        print('velocity\n', s.velocity.values)
-        print('position\n', s.position.values)
+    s = Strapdown(acceleration, magneticField)
+    print('bearing\n', s.bearing.values)
+    print('velocity\n', s.velocity.values)
+    print('position\n', s.position.values)
             
         #rotationRate = toVector(0.1, 0.2, 0.1)
         #acceleration = toVector(1.5, 2.4, 8.75)
-            
+    gyroBias = 0
+    K = Kalman()
+    
+    for i in range(2,50):   
+        print(i)     
+        
+        acceleration = toVector(d[i,0],d[i,1],d[i,2])
+        rotationRate = toVector(d[i,3],d[i,4],d[i,5])*pi/180 - gyroBias
+        magneticField = toVector(d[i,6],d[i,7],d[i,8])/100#*4.95283270677+ 1.67182206381
+        
         s.quaternion.update(rotationRate)
         s.bearing.values = s.quaternion.getEulerAngles()
         s.velocity.update(acceleration, s.quaternion)
@@ -53,16 +63,16 @@ def main():
         print('velocity\n', s.velocity.values)
         print('position\n', s.position.values)
             
-        K = Kalman()
         K.timeUpdate(s.quaternion)
         K.measurementUpdate(acceleration, magneticField, s.quaternion)
         
         print("kompensierte Lage = : \n",s.bearing.values - K.bearingError)
         print("kompensierte Drehrate = : \n",rotationRate - K.gyroBias)
         
-        K.bearingError = 0 
-        K.gyroBias = 0
-    
+        #K.bearingError[2] = K.bearingError[2]%(2*pi)
+        s.quaternion.update(K.bearingError) #angle = rate*DT
+        gyroBias = K.gyroBias 
+        K.resetState()
     
 if __name__ == "__main__":
     main()         

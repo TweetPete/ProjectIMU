@@ -4,7 +4,7 @@
 
 from numpy import zeros, eye, vstack, power, diag
 from MathLib import toVector, toValue
-from Settings import DT, g, EARTHMAGFIELD
+from Settings import DT, g, EARTHMAGFIELD, G
 class Kalman(object):
 
     
@@ -87,15 +87,15 @@ class Kalman(object):
         #h = eye(6, 6)+H*DT # Transitionmatrix h = integral(F)
         S = H*self.P*H.transpose()+R
         print("S =:\n", S)
-        test = S.I
         K = self.P*H.transpose()*S.I
         print("K =:\n", K)
         self.P = self.P - K*H*self.P # maybe use Josephs-Form
         print("VKV-Matrix a posteriori =:\n",self.P)
         
-        bearing = quaternion.getEulerAngles()
-        x0 = vstack((bearing, toVector(0.,0.,0.))) #gyro bias = 0
-        z0 = vstack((H1*x0,rotationMatrix.transpose()*EARTHMAGFIELD)) # h0(x0, r = 0)
+        #bearing = quaternion.getEulerAngles()
+        #x0 = vstack((bearing, toVector(0.,0.,0.))) #gyro bias = 0
+        #z0 = vstack((H1*x0,rotationMatrix.transpose()*EARTHMAGFIELD)) # h0(x0, r = 0)
+        z0 = vstack((rotationMatrix.transpose()*G,rotationMatrix.transpose()*EARTHMAGFIELD))
         print("z0 =:\n",z0)
         dz = vstack((acceleration,magneticField)) - z0
         print("dz =:\n",dz)
@@ -107,3 +107,6 @@ class Kalman(object):
         self.bearingError = newState[0:3]
         self.gyroBias = newState[3:6]
         
+    def resetState(self):
+        self.bearingError = toVector(0.,0.,0.)
+        self.gyroBias = toVector(0., 0., 0.)
