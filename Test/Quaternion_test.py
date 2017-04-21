@@ -3,6 +3,7 @@ from Quaternion import Quaternion
 from math import pi, sin, cos
 from MathLib import toVector, toValue, pythagoras
 from numpy import matrix
+from Settings import DT
 
 class Quaternion_test(unittest.TestCase):
     def test_init_empty(self):
@@ -59,11 +60,12 @@ class Quaternion_test(unittest.TestCase):
         
     def test_update(self):
         q = Quaternion()
-        q.update(toVector(-1.,0.5,1.2))
-        self.assertAlmostEqual(q.q0, 0.9999, delta=0.0001)
-        self.assertAlmostEqual(q.q1, -0.0012, delta=0.0001)
-        self.assertAlmostEqual(q.q2, 0.0006, delta=0.0001)
-        self.assertAlmostEqual(q.q3, 0.0015, delta=0.0001)
+        rotationRate = toVector(-1.,0.5,1.2)/DT
+        q.update(rotationRate)
+        self.assertAlmostEqual(q.q0, 0.68217, delta=0.0001)
+        self.assertAlmostEqual(q.q1, -0.44581, delta=0.0001)
+        self.assertAlmostEqual(q.q2, 0.22291, delta=0.0001)
+        self.assertAlmostEqual(q.q3, 0.53498, delta=0.0001)
         
     def test_vecTransformation(self):
         q = Quaternion(toVector(0.1,0.5,0.2))

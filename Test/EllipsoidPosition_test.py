@@ -27,7 +27,7 @@ class Position_test(unittest.TestCase):
         
     def test_update_2(self):
         p = EllipsoidPosition(toVector(deg2rad(51.),deg2rad(10.),0.))
-        vel = Velocity(toVector(400,800,0.)) #equal to 1 and 2 meters 
+        vel = Velocity(toVector(1./DT,2./DT,0.)) #equal to 1 and 2 meters 
         p.update(vel)
         self.assertAlmostEqual(51.+8.988903268e-06,rad2deg(p.values[0].item()), delta =10e-06) 
         self.assertAlmostEqual(10.+1.28368253e-05,rad2deg(p.values[1]), delta = 10e-06) 
