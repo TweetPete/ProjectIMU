@@ -2,9 +2,10 @@
     closed-loop-Error-state
 """
 
-from numpy import zeros, eye, vstack, power, diag
+from numpy import zeros, eye, vstack, power, diag, random
 from MathLib import toVector, toValue
 from Settings import DT, g, EARTHMAGFIELD, G
+from _random import Random
 class Kalman(object):
 
     
@@ -16,13 +17,13 @@ class Kalman(object):
         self.bearingError = toVector(0.,0.,0.) #stateElements
         self.gyroBias = toVector(0.,0.,0.)
         
-        self.gyroNoise = toVector(0.0003,0.0003,0.0003) #SensorNoise/systemNoise
-        self.gyroBiasNoise = toVector(0.0001,0.0001,0.0001) #RandomWalk
+        self.gyroNoise = 0.0003 #SensorNoise/systemNoise
+        self.gyroBiasNoise = 0.0001 #RandomWalk
         
-        self.accelNoise = toVector(0.0003,0.0003,0.0003) #SensorNoise/MeasurementNoise
-        self.magnetoNoise = toVector(0.0002,0.0002,0.0002)
+        self.accelNoise = 0.0003 #SensorNoise/MeasurementNoise
+        self.magnetoNoise = 0.0002
         
-        self.P = eye(6, 6)*100
+        self.P = eye(6, 6)*0
         
     def timeUpdate(self,quaternion):
         """ requires current quaternion to compute linearized system-modell at point x0
@@ -40,20 +41,18 @@ class Kalman(object):
         #print("G = \n", G)
         
         state = vstack((self.bearingError, self.gyroBias))
-        noise = vstack((self.gyroNoise, self.gyroBiasNoise))
         
         f = eye(6, 6)+F*DT # Transitionmatrix f 
         
         newState = f*state #+G*noise
-        print("Zustandsvektor a priori = :\n",newState)
+#        print("Zustandsvektor a priori = :\n",newState)
         self.bearingError = newState[0:3]
         self.gyroBias = newState[3:6]
         
-        qq = power(noise,2)
-        Q = diag(qq.A[:,0]) #uncorrelated 
+        Q = self.getNoiseMatrix(self.gyroNoise, self.gyroBiasNoise)
         
         self.P = f*self.P*f.transpose() + G*Q*G.transpose()
-        print("VKV-Matrix a priori = :\n", self.P)
+#       print("VKV-Matrix a priori = :\n", self.P)
         
     def measurementUpdate(self, acceleration, magneticField, quaternion):
         """ acceleration and magneticField-measurements are needed to calculate innovation z
@@ -78,19 +77,17 @@ class Kalman(object):
         H2 = rotationMatrix.transpose()*H2
         H = vstack((H1,H2))
 
-        print("Messmatrix H =:\n",H) 
-        noise = vstack((self.accelNoise, self.magnetoNoise))
-        rr = power(noise,2)
-        R = diag(rr.A[:,0])
+#         print("Messmatrix H =:\n",H) 
+        R = self.getNoiseMatrix(self.accelNoise, self.magnetoNoise)
         #print("R =:\n", R)
         
         #h = eye(6, 6)+H*DT # Transitionmatrix h = integral(F)
         S = H*self.P*H.transpose()+R
-        print("S =:\n", S)
+#        print("S =:\n", S)
         K = self.P*H.transpose()*S.I
-        print("K =:\n", K)
+#        print("K =:\n", K)
         self.P = self.P - K*H*self.P # maybe use Josephs-Form
-        print("VKV-Matrix a posteriori =:\n",self.P)
+#         print("VKV-Matrix a posteriori =:\n",self.P)
         
         #bearing = quaternion.getEulerAngles()
         #x0 = vstack((bearing, toVector(0.,0.,0.))) #gyro bias = 0
@@ -101,7 +98,7 @@ class Kalman(object):
         print("dz =:\n",dz)
         oldState = vstack((self.bearingError, self.gyroBias))
         innov = dz - H*oldState
-        print("innovation = :\n", innov)
+#         print("innovation = :\n", innov)
         newState = oldState+K*innov
         print("Zustandsvektor a posteriori = :\n", newState)
         self.bearingError = newState[0:3]
@@ -110,3 +107,12 @@ class Kalman(object):
     def resetState(self):
         self.bearingError = toVector(0.,0.,0.)
         self.gyroBias = toVector(0., 0., 0.)
+        
+    def getNoiseMatrix(self,rms1, rms2):
+        noise1 = random.normal(0,rms1,3)
+        noise2 = random.normal(0,rms2,3)
+        noise = vstack((noise1.reshape(3,1), noise2.reshape(3,1)))
+        nn = power(noise,2)
+        return diag(nn[:,0]) #uncorrelated 
+        
+        

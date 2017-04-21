@@ -1,6 +1,6 @@
 """ class Strapdown generates bearing, velocity and position from 9 degree IMU readings
 """
-from math import pi
+from math import pi, sqrt
 
 from Bearing import Bearing
 from MathLib import toVector
@@ -9,8 +9,8 @@ from Quaternion import Quaternion
 from Velocity import Velocity
 from Kalman import Kalman
 from FileManager import FileManager
-from Settings import DT
-
+import matplotlib.pyplot as plt
+from PlotHelper import PlotHelper
 
 class Strapdown(object):
     def __init__(self, acceleration, magneticField):
@@ -26,54 +26,69 @@ class Strapdown(object):
         
 def main():
     # read sensors
-    f = FileManager()
-    filePath = "data\Sample9DoF_R_Session1_Shimmer_B663_Calibrated_SD.csv"
-    d = f.readFile(filePath)
-    
-    i = 1
-    acceleration = toVector(d[i,0],d[i,1],d[i,2])
-    rotationRate = toVector(d[i,3],d[i,4],d[i,5])*pi/180 
-    magneticField = toVector(d[i,6],d[i,7],d[i,8])*100 #*4.95283270677+ 1.67182206381
-        
-        #acceleration = toVector(1., 2., 9.81)
-        #magneticField = toVector(3., 5., 7.)
-    s = Strapdown(acceleration, magneticField)
-    print('bearing\n', s.bearing.values)
-    print('velocity\n', s.velocity.values)
-    print('position\n', s.position.values)
+    filePath = "data\mystream_realFrame_fast.csv"
+    d = FileManager(filePath)
+
+    accelArray, rotationArray, magneticArray = convArray2IMU(d.values)
+
+    s = Strapdown(accelArray[:,0], magneticArray[:,0])
+    print('Initial bearing\n', s.bearing.values)
+    print('Initial velocity\n', s.velocity.values)
+    print('Initial position\n', s.position.values)
             
-        #rotationRate = toVector(0.1, 0.2, 0.1)
-        #acceleration = toVector(1.5, 2.4, 8.75)
-    gyroBias = 0
+    gyroBias = toVector(0.,0.,0.)
     K = Kalman()
     
-    for i in range(2,50):   
-        print(i)     
+    ph = PlotHelper()
+    
+    for i in range(1,100):   
+        print(i)    
+        ## plot 
+#         euler = s.quaternion.getEulerAngles()
+#         ph.subplot(i,euler[0],"ro",311)  
+#         ph.subplot(i, gyroBias[0], "bo",321)
+#         ph.subplot(i,euler[1],"ro",312)  
+#         ph.subplot(i, gyroBias[1], "bo",322)
+#         ph.subplot(i,euler[2],"ro",313)  
+#         ph.subplot(i, gyroBias[2], "bo",323)
         
-        acceleration = toVector(d[i,0],d[i,1],d[i,2])
-        rotationRate = toVector(d[i,3],d[i,4],d[i,5])*pi/180 - gyroBias
-        magneticField = toVector(d[i,6],d[i,7],d[i,8])/100#*4.95283270677+ 1.67182206381
+        plot_handle = ph.subplot(i,(K.P[0,0]),"go",311)
+        ph.subplot(i,(K.P[1,1]),"go",312)
+        ph.subplot(i,(K.P[2,2]),"go",313) 
+        ## plot 
+             
+        acceleration = accelArray[:,i]
+        rotationRate = rotationArray[:,i]-gyroBias
+        magneticField = magneticArray[:,i]
         
         s.quaternion.update(rotationRate)
         s.bearing.values = s.quaternion.getEulerAngles()
         s.velocity.update(acceleration, s.quaternion)
         s.position.update(s.velocity)
             
-        print('bearing\n', s.bearing.values)
-        print('velocity\n', s.velocity.values)
-        print('position\n', s.position.values)
+#         print('bearing\n', s.bearing.values)
+#         print('velocity\n', s.velocity.values)
+#         print('position\n', s.position.values)
             
         K.timeUpdate(s.quaternion)
-        K.measurementUpdate(acceleration, magneticField, s.quaternion)
+        if i%5 == 0:
+            K.measurementUpdate(acceleration, magneticField, s.quaternion)
+               
+            bearingOld = s.quaternion.getEulerAngles()        
+            s.quaternion.update(K.bearingError) #angle = rate*DT
+            bearingNew = s.quaternion.getEulerAngles()
+            print("Differenz zwischen neuer und alter Lage \n",bearingNew-bearingOld)
+            gyroBias = K.gyroBias 
+            K.resetState()
         
-        print("kompensierte Lage = : \n",s.bearing.values - K.bearingError)
-        print("kompensierte Drehrate = : \n",rotationRate - K.gyroBias)
-        
-        #K.bearingError[2] = K.bearingError[2]%(2*pi)
-        s.quaternion.update(K.bearingError) #angle = rate*DT
-        gyroBias = K.gyroBias 
-        K.resetState()
-    
+    ph.show(handle = (plot_handle,), label =('Varianz Winkel-Error',))
+
+def convArray2IMU(array):
+    acceleration = toVector(array[:,1],array[:,2],array[:,3]+3.05)
+    rotationRate = toVector(array[:,4],array[:,5],array[:,6])*pi/180 
+    magneticField = toVector(array[:,7],-array[:,8],array[:,9])
+    return acceleration.transpose(), rotationRate.transpose(), magneticField.transpose()
+
 if __name__ == "__main__":
     main()         
         
