@@ -16,4 +16,4 @@ class Velocity(object):
             acceleration given in m/s2 
         """
         an = quaternion.vecTransformation(acceleration)        
-        self.values += DT * (an - G)
+        self.values += DT * (an + G)

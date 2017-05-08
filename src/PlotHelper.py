@@ -1,29 +1,22 @@
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+from MathLib import toVector, toValue
+from numpy import shape
 
-class PlotHelper(object): 
-    def __init__(self):
-        self.figure = plt.Figure()
-        
-    def plot(self,x,y,symbol):
-        handle, = plt.plot(x,y,symbol) 
-        return handle
-        
-    def subplot(self,x,y,symbol,shape):
-        plt.subplot(shape)
-        return self.plot(x, y, symbol)
-        
-    def show(self, xlabel='', ylabel='', title='', handle=(), label=()):
-        plt.title(title)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.gcf().legend(handle, label)
-        plt.show()
+def plotVector(x, vector):
+    if not vector.any(): raise ValueError( "Vector is not valid" )
+    y1, y2, y3 = toValue(vector)
+    symbol = 'ro'
+    plt.subplot(311)
+    plt.plot(x,y1,symbol)
+    plt.subplot(312)
+    plt.plot(x,y2,symbol)
+    plt.subplot(313)
+    plt.plot(x,y3,symbol)
         
 def main():
-    ph = PlotHelper()
-    handle1 = ph.plot((1,2,3), (2,3,2), 'ro')
-    handle2 = ph.plot((11,12,13),(12,13,12),'go')
-    ph.show(handle= (handle1, handle2), label = ('label1', 'label2'))
+    vec = toVector(1.,2.,0.)
+    plotVector(1,vec)
+    plt.show()
     
 if __name__ == "__main__":
     main()

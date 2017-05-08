@@ -5,7 +5,7 @@
 from numpy import zeros, eye, vstack, power, diag, random
 from MathLib import toVector, toValue
 from Settings import DT, g, EARTHMAGFIELD, G
-from _random import Random
+
 class Kalman(object):
 
     
@@ -20,10 +20,10 @@ class Kalman(object):
         self.gyroNoise = 0.0003 #SensorNoise/systemNoise
         self.gyroBiasNoise = 0.0001 #RandomWalk
         
-        self.accelNoise = 0.0003 #SensorNoise/MeasurementNoise
-        self.magnetoNoise = 0.0002
+        self.accelNoise = 1000. #SensorNoise/MeasurementNoise
+        self.magnetoNoise = 2000.
         
-        self.P = eye(6, 6)*0
+        self.P = eye(6, 6)*1
         
     def timeUpdate(self,quaternion):
         """ requires current quaternion to compute linearized system-modell at point x0
@@ -84,7 +84,8 @@ class Kalman(object):
         #h = eye(6, 6)+H*DT # Transitionmatrix h = integral(F)
         S = H*self.P*H.transpose()+R
 #        print("S =:\n", S)
-        K = self.P*H.transpose()*S.I
+        #K = self.P*H.transpose()*S.I
+        K = eye(6,6)*10e-6
 #        print("K =:\n", K)
         self.P = self.P - K*H*self.P # maybe use Josephs-Form
 #         print("VKV-Matrix a posteriori =:\n",self.P)
@@ -92,13 +93,14 @@ class Kalman(object):
         #bearing = quaternion.getEulerAngles()
         #x0 = vstack((bearing, toVector(0.,0.,0.))) #gyro bias = 0
         #z0 = vstack((H1*x0,rotationMatrix.transpose()*EARTHMAGFIELD)) # h0(x0, r = 0)
-        z0 = vstack((rotationMatrix.transpose()*G,rotationMatrix.transpose()*EARTHMAGFIELD))
+        z0 = vstack((rotationMatrix.transpose()*-G,rotationMatrix.transpose()*EARTHMAGFIELD))
         print("z0 =:\n",z0)
         dz = vstack((acceleration,magneticField)) - z0
         print("dz =:\n",dz)
+        #print("dz in\% =:\n",dz/z0*100)
         oldState = vstack((self.bearingError, self.gyroBias))
         innov = dz - H*oldState
-#         print("innovation = :\n", innov)
+        #print("innovation = :\n", innov)
         newState = oldState+K*innov
         print("Zustandsvektor a posteriori = :\n", newState)
         self.bearingError = newState[0:3]
@@ -115,4 +117,4 @@ class Kalman(object):
         nn = power(noise,2)
         return diag(nn[:,0]) #uncorrelated 
         
-        
+    

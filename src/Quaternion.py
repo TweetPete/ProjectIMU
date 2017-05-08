@@ -113,3 +113,11 @@ class Quaternion (object):
         conjQuat = toVector(self.q0, -self.q1, -self.q2, -self.q3)
         res = mvMultiplication(f1, conjQuat)
         return res[1:4]
+
+    def getConjugatedQuaternion(self):
+        conjQuat = Quaternion()
+        conjQuat.q0 = self.q0
+        conjQuat.q1 = -self.q1
+        conjQuat.q2 = -self.q2
+        conjQuat.q3 = -self.q3
+        return conjQuat
