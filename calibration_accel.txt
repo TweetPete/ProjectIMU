@@ -1,0 +1,5 @@
+#moved at 300000
+sample size : 553737, during 2214.948 sec
+#bx 0.011542, by 0.094553, bz 0.975930
+nx 0.011252, ny 0.013247, nz 0.015040
+trendx 0.000000, trendy 0.000000, trendz 0.000000
