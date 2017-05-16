@@ -19,15 +19,18 @@ class Quaternion (object):
         th2 = theta / 2
         ps2 = psi / 2
         
-        self.q0 = cos(ph2) * cos(th2) * cos(ps2) + sin(ph2) * sin(th2) * sin(ps2)
-        self.q1 = sin(ph2) * cos(th2) * cos(ps2) - cos(ph2) * sin(th2) * sin(ps2)
-        self.q2 = cos(ph2) * sin(th2) * cos(ps2) + sin(ph2) * cos(th2) * sin(ps2)
-        self.q3 = cos(ph2) * cos(th2) * sin(ps2) - sin(ph2) * sin(th2) * cos(ps2)
+        q0 = cos(ph2) * cos(th2) * cos(ps2) + sin(ph2) * sin(th2) * sin(ps2)
+        q1 = sin(ph2) * cos(th2) * cos(ps2) - cos(ph2) * sin(th2) * sin(ps2)
+        q2 = cos(ph2) * sin(th2) * cos(ps2) + sin(ph2) * cos(th2) * sin(ps2)
+        q3 = cos(ph2) * cos(th2) * sin(ps2) - sin(ph2) * sin(th2) * cos(ps2)
+        
+        self.values = toVector(q0, q1, q2, q3)
         
     def getRotationMatrix(self):
         """ creates the 3x3 rotation matrix from quaternion parameters 
             represents the same relation between coordinate systems
         """
+        q0, q1, q2, q3 = toValue(self.values)
 #         r11 = 2 * pow(self.q0, 2) - 1 + 2 * pow(self.q1, 2)
 #         r22 = 2 * pow(self.q0, 2) - 1 + 2 * pow(self.q2, 2)
 #         r33 = 2 * pow(self.q0, 2) - 1 + 2 * pow(self.q3, 2)
@@ -38,15 +41,15 @@ class Quaternion (object):
 #         r31 = 2 * (self.q1 * self.q3 + self.q0 * self.q2)
 #         r32 = 2 * (self.q2 * self.q3 - self.q0 * self.q1)
         
-        r11 = self.q0**2+self.q1**2-self.q2**2-self.q3**2
-        r22 = self.q0**2-self.q1**2+self.q2**2-self.q3**2
-        r33 = self.q0**2-self.q1**2-self.q2**2+self.q3**2
-        r12 = 2 * (self.q1 * self.q2 - self.q0 * self.q3)
-        r13 = 2 * (self.q1 * self.q3 + self.q0 * self.q2)
-        r23 = 2 * (self.q2 * self.q3 - self.q0 * self.q1)
-        r21 = 2 * (self.q1 * self.q2 + self.q0 * self.q3)
-        r31 = 2 * (self.q1 * self.q3 - self.q0 * self.q2)
-        r32 = 2 * (self.q2 * self.q3 + self.q0 * self.q1)
+        r11 = q0**2+q1**2-q2**2-q3**2
+        r22 = q0**2-q1**2+q2**2-q3**2
+        r33 = q0**2-q1**2-q2**2+q3**2
+        r12 = 2 * (q1 * q2 - q0 * q3)
+        r13 = 2 * (q1 * q3 + q0 * q2)
+        r23 = 2 * (q2 * q3 - q0 * q1)
+        r21 = 2 * (q1 * q2 + q0 * q3)
+        r31 = 2 * (q1 * q3 - q0 * q2)
+        r32 = 2 * (q2 * q3 + q0 * q1)
         
         return matrix([[r11, r12, r13], [r21, r22, r23], [r31, r32, r33]])
     
@@ -54,14 +57,16 @@ class Quaternion (object):
         """ calculates Euler angles from the current Quaternion
             result is given in a 3x1 vector in radians
         """
-#         phi = atan2(2*(self.q2*self.q3 - self.q0*self.q1), 2*self.q0**2 - 1 + 2*self.q3**2)
-#         theta = -atan2(2*(self.q1*self.q3 + self.q0*self.q2), sqrt(1-(2*self.q1*self.q3 + 2*self.q0*self.q2)**2))
-#         psi = atan2(2*(self.q1*self.q2 - self.q0*self.q3), 2*self.q0**2 - 1 + 2*self.q1**2)
+        
+        q0, q1, q2, q3 = toValue(self.values)
+#         phi = atan2(2*(q2*q3 - q0*q1), 2*q0**2 - 1 + 2*q3**2)
+#         theta = -atan2(2*(q1*q3 + q0*q2), sqrt(1-(2*q1*q3 + 2*q0*q2)**2))
+#         psi = atan2(2*(q1*q2 - q0*q3), 2*q0**2 - 1 + 2*q1**2)
     
         # Wikipedia
-        phi = atan2(2 * (self.q0 * self.q1 + self.q2 * self.q3), 1 - 2 * (self.q1 ** 2 + self.q2 ** 2))
-        theta = asin(2 * (self.q0 * self.q2 - self.q3 * self.q1))
-        psi = atan2(2 * (self.q0 * self.q3 + self.q1 * self.q2), 1 - 2 * (self.q2 ** 2 + self.q3 ** 2))
+        phi = atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 ** 2 + q2 ** 2))
+        theta = asin(2 * (q0 * q2 - q3 * q1))
+        psi = atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 ** 2 + q3 ** 2))
         
         return toVector(phi, theta, psi)
     
@@ -84,14 +89,8 @@ class Quaternion (object):
         r234 = w * factor
         r = insert(r234, 0, r1)
         
-        quat = toVector(self.q0, self.q1, self.q2, self.q3) 
-        newQuat = mvMultiplication(quat, r.transpose())
- 
-        self.q0 = newQuat[0].item()
-        self.q1 = newQuat[1].item()
-        self.q2 = newQuat[2].item()
-        self.q3 = newQuat[3].item()
-
+        self.values = mvMultiplication(self.values, r.transpose())
+         
 #     def quatMultiplication(self, vector):
 #         """ concatenation of two quaternions
 #             argument vector has to be a quaternionvektor(4x1)
@@ -107,17 +106,16 @@ class Quaternion (object):
         vector = insert(vector, 0, 0)
         vector = vector.transpose()
         
-        quat = toVector(self.q0, self.q1, self.q2, self.q3) 
-        f1 = mvMultiplication(quat,vector)
+        f1 = mvMultiplication(self.values,vector)
         
-        conjQuat = toVector(self.q0, -self.q1, -self.q2, -self.q3)
-        res = mvMultiplication(f1, conjQuat)
+        conjQuat = self.getConjugatedQuaternion()
+        res = mvMultiplication(f1, conjQuat.values)
         return res[1:4]
 
     def getConjugatedQuaternion(self):
+        """ returns the conjugated quaternion 
+        """
         conjQuat = Quaternion()
-        conjQuat.q0 = self.q0
-        conjQuat.q1 = -self.q1
-        conjQuat.q2 = -self.q2
-        conjQuat.q3 = -self.q3
+        q0,q1,q2,q3 = toValue(self.values)
+        conjQuat.values = toVector(q0,-q1,-q2,-q3)
         return conjQuat

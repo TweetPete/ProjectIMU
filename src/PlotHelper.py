@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 from MathLib import toVector, toValue
-from numpy import shape
 
 def plotVector(x, vector):
     if not vector.any(): raise ValueError( "Vector is not valid" )

@@ -2,6 +2,7 @@
 """
 from Euler import Euler
 from MathLib import toVector
+from math import pi
 from Position import Position
 from Quaternion import Quaternion
 from Velocity import Velocity
@@ -75,7 +76,7 @@ def main():
             if i%20 == 0:
                 euler = rad2deg(s.getOrientation())
                 plt.figure(1)
-                plotVector(i,euler)
+                plotVector(i*DT,euler)
                 #plt.figure(2)
                 #plotVector(i,gyroBias)
                  
@@ -90,10 +91,10 @@ def main():
 #             K.timeUpdate(s.quaternion)
 #             if i%1 == 0:
 #                 K.measurementUpdate(acceleration, magneticField, s.quaternion)
-#                    
+#                     
 #                 bearingOld = s.getOrientation()        
 #                 s.quaternion.update(K.bearingError/DT) #angle = rate*DT
-#                 print(s.quaternion.q0, s.quaternion.q1, s.quaternion.q2, s.quaternion.q3)
+#                 print(s.quaternion.values)
 #                 bearingNew = s.getOrientation()
 #                 print("Differenz zwischen neuer und alter Lage \n",bearingNew-bearingOld)
 #                 gyroBias = K.gyroBias 
@@ -115,7 +116,7 @@ def main():
 
 def convArray2IMU(array): #arduino 10DOF
     acceleration = toVector(array[:,4],array[:,5],array[:,6])*-g
-    rotationRate = toVector(array[:,1],array[:,2],array[:,3])
+    rotationRate = toVector(array[:,1],array[:,2],array[:,3])*pi/180
     magneticField = toVector(array[:,7],array[:,8],array[:,9])*1
     return acceleration.transpose(), rotationRate.transpose(), magneticField.transpose()
 
