@@ -1,17 +1,20 @@
 from FileManager import FileManager
 from numpy import polyfit, std
+from Settings import DT
+from math import sqrt
 
-filePath = "data\\arduino10DOF\gyro_calibration_long.csv"
-col_gyro = range(1,4)
-col_accel = range(4,7)
-col_mag = range(7,10)
+filePath = "data\\arduino10DOF\gyro_calibration.csv"
+col_gyro = range(1,4) #dps
+col_accel = range(4,7) #-g
+col_mag = range(7,10) #muT
 d = FileManager(filePath, columns=col_gyro, skip_header = 7)
 v = d.values
 
-x = v[:,0]
-y = v[:,1]
-z = v[:,2]
-i = range(0,d.length)
+l = 5000
+x = v[:l,0]
+y = v[:l,1]
+z = v[:l,2]
+i = range(0,l)
 
 bx = polyfit(i,x,0)
 by = polyfit(i,y,0)
