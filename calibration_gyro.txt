@@ -5,6 +5,6 @@ trendx -0.000000, trendy -0.000000, trendz 0.000000
 
 #moved at 300000
 sample size : 553737, during 2214.948 sec
-bx 0.000018, by -0.000003, bz -0.000003
-nx 0.002933, ny 0.002104, nz 0.001641
+bx 0.000018, by -0.000003, bz -0.000003 dps
+nx 0.002933, ny 0.002104, nz 0.001641  
 trendx -0.000000, trendy -0.000000, trendz 0.000000
