@@ -4,7 +4,7 @@ from math import pi
 import unittest
 
 
-class Bearing_test(unittest.TestCase):
+class Euler_test(unittest.TestCase):
     
     def test_init(self):
         acc = toVector(1., 2., -10.)

@@ -1,8 +1,8 @@
 import unittest
 from Quaternion import Quaternion
 from math import pi, sin, cos
-from MathLib import toVector, toValue, pythagoras
-from numpy import matrix
+from MathLib import toVector, toValue, pythagoras, mvMultiplication
+from numpy import matrix, deg2rad
 from Settings import DT
 
 class Quaternion_test(unittest.TestCase):
@@ -70,6 +70,40 @@ class Quaternion_test(unittest.TestCase):
         self.assertAlmostEqual(q1, -0.44581, delta=0.0001)
         self.assertAlmostEqual(q2, 0.22291, delta=0.0001)
         self.assertAlmostEqual(q3, 0.53498, delta=0.0001)
+        
+    def test_concatenation(self):
+        q = Quaternion()
+        q_increment = Quaternion(toVector(deg2rad(10.),0.,0.))
+        #q.values = mvMultiplication(q.values,q_increment.values)
+        q *= q_increment
+        q0,q1,q2,q3 = toValue(q.values)
+        self.assertAlmostEqual(q0, 0.996, delta=0.001)
+        self.assertAlmostEqual(q1, 0.087, delta=0.001)
+        self.assertAlmostEqual(q2, 0., delta=0.001)
+        self.assertAlmostEqual(q3, 0., delta=0.001)
+
+    def test_concatenation_180(self):
+        q = Quaternion()
+        q_increment = Quaternion(toVector(deg2rad(10.),0.,0.))
+        for _ in range(0,18):
+            #q.values = mvMultiplication(q.values,q_increment.values)
+            q *= q_increment
+        q0,q1,q2,q3 = toValue(q.values)
+        self.assertAlmostEqual(q0, 0., delta=0.001)
+        self.assertAlmostEqual(q1, 1., delta=0.001)
+        self.assertAlmostEqual(q2, 0., delta=0.001)
+        self.assertAlmostEqual(q3, 0., delta=0.001)
+        
+    def test_concatenation_10_5_1(self):
+        q = Quaternion()
+        q_increment = Quaternion(toVector(deg2rad(10.),deg2rad(5.),deg2rad(1.)))
+        #q.values = mvMultiplication(q.values,q_increment.values)
+        q *= q_increment
+        q0,q1,q2,q3 = toValue(q.values)
+        self.assertAlmostEqual(q0, 0.995, delta=0.001)
+        self.assertAlmostEqual(q1, 0.087, delta=0.001)
+        self.assertAlmostEqual(q2, 0.044, delta=0.001)
+        self.assertAlmostEqual(q3, 0.005, delta=0.001)
         
     def test_vecTransformation(self):
         q = Quaternion(toVector(0.1,0.5,0.2))
