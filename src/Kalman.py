@@ -5,6 +5,7 @@
 from numpy import zeros, eye, vstack, power, diag, random
 from MathLib import toVector, toValue
 from Settings import DT, g, EARTHMAGFIELD, G
+from math import sqrt
 
 class Kalman(object):
 
@@ -17,13 +18,13 @@ class Kalman(object):
         self.bearingError = toVector(0.,0.,0.) #stateElements
         self.gyroBias = toVector(0.,0.,0.)
         
-        self.gyroNoise = 0.0003 #SensorNoise/systemNoise
-        self.gyroBiasNoise = 0.0001 #RandomWalk
+        self.gyroNoise = 1.8*sqrt(0.004/3600)*10 #SensorNoise/systemNoise
+        self.gyroBiasNoise = 0.5*sqrt(0.004/3600)*10 #RandomWalk
         
-        self.accelNoise = 1000. #SensorNoise/MeasurementNoise
-        self.magnetoNoise = 2000.
+        self.accelNoise = 1.5#(5.12936/60)**2/0.004#0.12936*sqrt(0.004/3600) #SensorNoise/MeasurementNoise
+        self.magnetoNoise = 100
         
-        self.P = eye(6, 6)*1
+        self.P = eye(6, 6)*1e-6
         
     def timeUpdate(self,quaternion):
         """ requires current quaternion to compute linearized system-modell at point x0
@@ -42,16 +43,24 @@ class Kalman(object):
         
         state = vstack((self.bearingError, self.gyroBias))
         
+        # discretisation
         f = eye(6, 6)+F*DT # Transitionmatrix f 
+        g = G*DT
         
         newState = f*state #+G*noise
 #        print("Zustandsvektor a priori = :\n",newState)
         self.bearingError = newState[0:3]
         self.gyroBias = newState[3:6]
         
-        Q = self.getNoiseMatrix(self.gyroNoise, self.gyroBiasNoise)
-        
-        self.P = f*self.P*f.transpose() + G*Q*G.transpose()
+#         Q = self.getNoiseMatrix(self.gyroNoise, self.gyroBiasNoise)
+        Q = eye(6,6)
+        Q[0,0] = self.gyroNoise**2
+        Q[1,1] = self.gyroNoise**2
+        Q[2,2] = self.gyroNoise**2
+        Q[3,3] = self.gyroBiasNoise**2
+        Q[4,4] = self.gyroBiasNoise**2
+        Q[5,5] = self.gyroBiasNoise**2
+        self.P = f*self.P*f.transpose() + g*Q*g.transpose()
 #       print("VKV-Matrix a priori = :\n", self.P)
         
     def measurementUpdate(self, acceleration, magneticField, quaternion):
@@ -76,17 +85,27 @@ class Kalman(object):
         H2[1,5] =-hn
         H2 = rotationMatrix.transpose()*H2
         H = vstack((H1,H2))
-
+        
+        # discretisation
+        H = H*DT
 #         print("Messmatrix H =:\n",H) 
-        R = self.getNoiseMatrix(self.accelNoise, self.magnetoNoise)
+        #R = self.getNoiseMatrix(self.accelNoise, self.magnetoNoise)
+        R = eye(6,6)
+        R[0,0] = self.accelNoise**2
+        R[1,1] = self.accelNoise**2
+        R[2,2] = self.accelNoise**2
+        R[3,3] = self.magnetoNoise**2
+        R[4,4] = self.magnetoNoise**2
+        R[5,5] = self.magnetoNoise**2
+        
         #print("R =:\n", R)
         
         #h = eye(6, 6)+H*DT # Transitionmatrix h = integral(F)
         S = H*self.P*H.transpose()+R
 #        print("S =:\n", S)
-        #K = self.P*H.transpose()*S.I
-        K = eye(6,6)*10e-6
-#        print("K =:\n", K)
+        K = self.P*H.transpose()*S.I
+        #K = eye(6,6)*10e-6
+        #print("K =:\n", K)
         self.P = self.P - K*H*self.P # maybe use Josephs-Form
 #         print("VKV-Matrix a posteriori =:\n",self.P)
         

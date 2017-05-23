@@ -4,7 +4,7 @@
 from MathLib import pythagoras, toVector, toValue, mvMultiplication
 from Settings import DT
 from math import sin, cos, atan2, asin
-from numpy import matrix, insert
+from numpy import matrix, insert, long
 
 
 class Quaternion (object):
@@ -25,6 +25,15 @@ class Quaternion (object):
         q3 = cos(ph2) * cos(th2) * sin(ps2) - sin(ph2) * sin(th2) * cos(ps2)
         
         self.values = toVector(q0, q1, q2, q3)
+    
+    def __mul__(self, value):
+        new_quat = Quaternion()
+        if isinstance(value, Quaternion):
+            new_quat.values = mvMultiplication(self.values, value.values)
+            return new_quat
+        elif isinstance(value, (int, long, float)): 
+            print('skalare Multiplikation ist noch nicht implementiert')
+            return 0.
         
     def getRotationMatrix(self):
         """ creates the 3x3 rotation matrix from quaternion parameters 
@@ -119,3 +128,12 @@ class Quaternion (object):
         q0,q1,q2,q3 = toValue(self.values)
         conjQuat.values = toVector(q0,-q1,-q2,-q3)
         return conjQuat
+    
+def main():
+    q = Quaternion()
+    q2 = Quaternion()
+    z = q*2.
+    print(z)
+    
+if __name__ == "__main__":
+    main()  

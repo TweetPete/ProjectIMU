@@ -3,14 +3,14 @@ from numpy import polyfit, std
 from Settings import DT
 from math import sqrt
 
-filePath = "data\\arduino10DOF\gyro_calibration.csv"
+filePath = "data\\arduino10DOF\sample_gyroBias.csv"
 col_gyro = range(1,4) #dps
 col_accel = range(4,7) #-g
 col_mag = range(7,10) #muT
-d = FileManager(filePath, columns=col_gyro, skip_header = 7)
+d = FileManager(filePath, columns=col_mag, skip_header = 7)
 v = d.values
 
-l = 5000
+l = d.length
 x = v[:l,0]
 y = v[:l,1]
 z = v[:l,2]
@@ -27,7 +27,7 @@ trendz, _ = polyfit(i,z,1)
 print("sample size : %i, during %.3f sec" % (len(x), len(x)*d.sampleRate))
 print("bx %.9f, by %.9f, bz %.9f" % (bx, by, bz))
 print("nx %f, ny %f, nz %f" % (std(x),std(y),std(z)))
-print("trendx %f, trendy %f, trendz %f" % (trendx, trendy, trendz))
+print("trendx %.9f, trendy %.9f, trendz %.9f" % (trendx, trendy, trendz))
 
 # ph = PlotHelper()
 # ph.subplot(i, x, 'ro',311)

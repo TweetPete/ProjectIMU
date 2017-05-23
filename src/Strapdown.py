@@ -1,7 +1,7 @@
 """ class Strapdown generates bearing, velocity and position from 9 degree IMU readings
 """
 from Euler import Euler
-from MathLib import toVector
+from MathLib import toVector, mvMultiplication
 from math import pi
 from Position import Position
 from Quaternion import Quaternion
@@ -51,11 +51,11 @@ def main():
     mag_mean = toVector(0.,0.,0.)
     
     # read sensors
-    filePath = "data\\arduino10DOF\gyro_calibration_long.csv"
+    filePath = "data\\arduino10DOF\sample_gyroBias.csv"
     d = FileManager(filePath, columns=range(0,10), skip_header = 7)
     accelArray, rotationArray, magneticArray = convArray2IMU(d.values)
     
-    for i in range(1,25000):   
+    for i in range(1,15000):   
 
         # for 10 minutes
         if not s.isInitialized:
@@ -79,7 +79,7 @@ def main():
                 plotVector(i*DT,euler)
                 #plt.figure(2)
                 #plotVector(i,gyroBias)
-                 
+                print("VK-Matrix der Zustandselemente: \n", K.P) 
             acceleration = accelArray[:,i]
             rotationRate = rotationArray[:,i]-gyroBias
             magneticField = magneticArray[:,i]
@@ -88,17 +88,19 @@ def main():
             s.velocity.update(acceleration, s.quaternion)
             s.position.update(s.velocity)
                 
-#             K.timeUpdate(s.quaternion)
-#             if i%1 == 0:
-#                 K.measurementUpdate(acceleration, magneticField, s.quaternion)
-#                     
-#                 bearingOld = s.getOrientation()        
-#                 s.quaternion.update(K.bearingError/DT) #angle = rate*DT
-#                 print(s.quaternion.values)
-#                 bearingNew = s.getOrientation()
-#                 print("Differenz zwischen neuer und alter Lage \n",bearingNew-bearingOld)
-#                 gyroBias = K.gyroBias 
-#                 K.resetState()
+            K.timeUpdate(s.quaternion)
+            if i%10 == 0:
+                K.measurementUpdate(acceleration, magneticField, s.quaternion)
+                        
+                bearingOld = s.getOrientation()        
+                errorQuat = Quaternion(K.bearingError)
+                s.quaternion *= errorQuat
+                #s.quaternion.update(K.bearingError/DT) #angle = rate*DT
+                print(s.quaternion.values)
+                bearingNew = s.getOrientation()
+                print("Differenz zwischen neuer und alter Lage \n",rad2deg(bearingNew-bearingOld))
+                gyroBias += K.gyroBias 
+                K.resetState()
             
     plt.show()
 
