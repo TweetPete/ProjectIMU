@@ -1,14 +1,14 @@
 from FileManager import FileManager
 from numpy import polyfit, std
 from Settings import DT
-from math import sqrt
+from math import sqrt,pi
 
 filePath = "data\\arduino10DOF\sample_gyroBias.csv"
-col_gyro = range(1,4) #dps
+col_gyro = range(1,4) #rad/s
 col_accel = range(4,7) #-g
 col_mag = range(7,10) #muT
-d = FileManager(filePath, columns=col_mag, skip_header = 7)
-v = d.values
+d = FileManager(filePath, columns=col_gyro, skip_header = 7)
+v = d.values*180/pi
 
 l = d.length
 x = v[:l,0]

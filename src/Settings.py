@@ -9,7 +9,8 @@ g = 9.81
 #DT = 0.020141559139755304 #50Hz 
 #DT = 1/256
 #DT = 1 / 400  # sek
-DT = 4/1000
+DT = 10/1000
+
 G = toVector(0, 0, g)  # m/s2
 
 # https://www.ngdc.noaa.gov/geomag-web/?model=igrf#igrfwmm
