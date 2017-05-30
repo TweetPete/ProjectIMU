@@ -8,7 +8,8 @@ from Quaternion import Quaternion
 from Velocity import Velocity
 from Kalman import Kalman
 from FileManager import FileManager
-from PlotHelper import plotVector
+from PlotHelper import plotVector, plot3DFrame
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from Settings import g, DT
 from numpy import rad2deg
@@ -51,18 +52,23 @@ def main():
     mag_mean = toVector(0.,0.,0.)
     
     # read sensors
-    filePath = "data\\arduino10DOF\sample_gyroBias.csv"
+    filePath = "data\\arduino10DOF\\10min_calib_wTilt.csv"
     d = FileManager(filePath, columns=range(0,10), skip_header = 7)
     accelArray, rotationArray, magneticArray = convArray2IMU(d.values)
     
-    for i in range(1,15000):   
+    # realtime 3D plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    plt.ion()
+    
+    for i in range(1,d.length):   
 
-        # for 10 minutes
+        # for 10 - 15 minutes
         if not s.isInitialized:
             rot_mean = lp_rot.mean(rot_mean, rotationArray[:,i])
             acc_mean = lp_acc.mean(acc_mean, accelArray[:,i])
             mag_mean = lp_mag.mean(mag_mean, magneticArray[:,i])
-            if i*DT >= 0.5*60 :
+            if i >= 100*60*7 :
                 s.Initialze(acc_mean, mag_mean)
                 gyroBias = rot_mean
         
@@ -73,13 +79,20 @@ def main():
                 print('Initial gyro Bias\n', gyroBias)
         else:
                 
-            if i%20 == 0:
-                euler = rad2deg(s.getOrientation())
-                plt.figure(1)
-                plotVector(i*DT,euler)
+            if i%20 == 0: # plot area
+                #euler = rad2deg(s.getOrientation())
+                #plt.figure(1)
+                #plotVector(i*DT,euler)
                 #plt.figure(2)
                 #plotVector(i,gyroBias)
-                print("VK-Matrix der Zustandselemente: \n", K.P) 
+                #print("VK-Matrix der Zustandselemente: \n", K.P) 
+                plt.cla()
+                fig.texts = []
+                plot3DFrame(s.quaternion,ax)
+                plt.draw()
+                plt.pause(0.05)
+
+                
             acceleration = accelArray[:,i]
             rotationRate = rotationArray[:,i]-gyroBias
             magneticField = magneticArray[:,i]
@@ -88,22 +101,23 @@ def main():
             s.velocity.update(acceleration, s.quaternion)
             s.position.update(s.velocity)
                 
-            K.timeUpdate(s.quaternion)
-            if i%10 == 0:
-                K.measurementUpdate(acceleration, magneticField, s.quaternion)
-                        
-                bearingOld = s.getOrientation()        
-                errorQuat = Quaternion(K.bearingError)
-                s.quaternion *= errorQuat
-                #s.quaternion.update(K.bearingError/DT) #angle = rate*DT
-                print(s.quaternion.values)
-                bearingNew = s.getOrientation()
-                print("Differenz zwischen neuer und alter Lage \n",rad2deg(bearingNew-bearingOld))
-                gyroBias += K.gyroBias 
-                K.resetState()
+#             K.timeUpdate(s.quaternion)
+#             if i%10 == 0:
+#                 K.measurementUpdate(acceleration, magneticField, s.quaternion)
+#                          
+#                 bearingOld = s.getOrientation()        
+#                 errorQuat = Quaternion(K.bearingError)
+#                 s.quaternion *= errorQuat
+#                 #s.quaternion.update(K.bearingError/DT) #angle = rate*DT
+#                 print(s.quaternion.values)
+#                 bearingNew = s.getOrientation()
+#                 print("Differenz zwischen neuer und alter Lage \n",rad2deg(bearingNew-bearingOld))
+#                 gyroBias += K.gyroBias 
+#                 K.resetState()
             
-    plt.show()
-
+    #plt.show()
+    print('final orientation\n', s.getOrientation())
+    
 # def convArray2IMU(array): #MYSTREAM APP
 #     acceleration = toVector(array[:,1],array[:,2],array[:,3]+3.05)
 #     rotationRate = toVector(array[:,4],array[:,5],array[:,6])*pi/180 
@@ -118,7 +132,7 @@ def main():
 
 def convArray2IMU(array): #arduino 10DOF
     acceleration = toVector(array[:,4],array[:,5],array[:,6])*-g
-    rotationRate = toVector(array[:,1],array[:,2],array[:,3])*pi/180
+    rotationRate = toVector(array[:,1],array[:,2],array[:,3])#*pi/180
     magneticField = toVector(array[:,7],array[:,8],array[:,9])*1
     return acceleration.transpose(), rotationRate.transpose(), magneticField.transpose()
 
