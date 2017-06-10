@@ -3,18 +3,19 @@ from numpy import polyfit, std
 from Settings import DT
 from math import sqrt,pi
 
-filePath = "data\\arduino10DOF\sample_gyroBias.csv"
+filePath = "data\\arduino10DOF\sample_Hubarm.csv"
 col_gyro = range(1,4) #rad/s
 col_accel = range(4,7) #-g
 col_mag = range(7,10) #muT
-d = FileManager(filePath, columns=col_gyro, skip_header = 7)
-v = d.values*180/pi
+d = FileManager(filePath, columns=col_mag, skip_header = 7)
+v = d.values#*-9.80665#*180/pi
 
-l = d.length
-x = v[:l,0]
-y = v[:l,1]
-z = v[:l,2]
-i = range(0,l)
+start = 46200
+l = int(d.length)
+x = v[start:l,0]
+y = v[start:l,1]
+z = v[start:l,2]
+i = range(start,l)
 
 bx = polyfit(i,x,0)
 by = polyfit(i,y,0)

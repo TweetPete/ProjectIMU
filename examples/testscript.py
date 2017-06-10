@@ -1,49 +1,27 @@
-from Quaternion import Quaternion
-from numpy import matrix
-from Strapdown import Strapdown
-from MathLib import toValue, toVector
-from Bearing import Bearing
-from Velocity import Velocity
-from Position import Position
+from math import sqrt
+from numpy import rad2deg
+from Settings import g
+ax = -0.108225710
+ay = -0.022668240
+az = -9.763507613
+s_ax = 0.128801
+s_ay = 0.095893
+s_az = 0.145545
 
-phi = 1
-theta = 1 
-psi = 0
+mx = 12.1699268074
+my = -14.7826727401
+s_mx = 0.225350
+s_my = 0.079485
 
-wx = 0.001
-wy = 0.001
-wz = 0
+s_phi_2 = (az/(ay**2+az**2))**2 * s_ay**2 + (-ay/(az**2+ay**2))**2 * s_az**2
+s_phi = sqrt(s_phi_2)
 
-print("Ausgangslage = ", phi, theta, psi)
-q = Quaternion(toVector(phi, theta, psi))
-# print("zweites Quaternionenelement ", q.q0)
-print("R\n" , q.getRotationMatrix())
-print("Drehrate = ", wx, wy, wz)
-q.update(matrix([wx, wy, wz]))
-# print("geupdatetes Quaternion ", q.q0)
+s_theta_2= (1/(g*sqrt(1-(ax**2/g**2))))**2 * s_ax**2
+s_theta = sqrt(s_theta_2)
 
-s = Strapdown()
-b = Bearing()
-# print(b.bearing, s.velocity)
-b.initBearing(matrix([0.1, 0.2, 10.0]), matrix([100, 200, 5]))
-print(b.values)
+s_psi_2 = (mx/(my**2+mx**2))**2 * s_my**2 + (-my/(mx**2+my**2))**2 * s_mx**2
+s_psi = sqrt(s_psi_2)
 
-print("Eulerwinkel aus Quaternion", q.getEulerAngles())  # Test Euler --> Quat --> update --> Euler ?
-neu = b.update(toVector(wx, wy, wz))
-print("Eulerwinkelaendeurng aus Eulerwinkeln", neu)
-
-a, b, c = toValue(matrix([3, 2, 1]))
-print(a, b, c)
-vector = toVector(a, b, c)
-print(vector)
-
-acc = matrix([3, 0.1, 2])
-vel = Velocity()
-print('v0', vel.values)
-vel.update(acc, q)
-print('v1', vel.values)
-
-pos = Position()
-print('p0', pos.values)
-pos.update(vel)
-print('p1', pos.values)
+print((s_phi))
+print((s_theta))
+print((s_psi))

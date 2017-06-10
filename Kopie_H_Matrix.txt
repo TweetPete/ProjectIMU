@@ -1,0 +1,28 @@
+        rotationMatrix = quaternion.getRotationMatrix()
+        H1 = zeros(shape =(3,6))
+        H1[0,1] =-g
+        H1[0,4] =-g*DT/10
+        H1[1,0] = g
+        H1[1,3] = g*DT/10
+        H1 = -rotationMatrix.transpose()*H1
+        
+        he, hn, _ = toValue(EARTHMAGFIELD)
+        
+        H2 = zeros(shape=(3,6))
+        H2[0,2] = he
+        H2[0,5] = he*DT/10
+        H2[1,2] =-hn
+        H2[1,5] =-hn*DT/10
+        H2 = rotationMatrix.transpose()*H2
+        H = vstack((H1,H2))
+
+Initial gyro Bias        
+[[ 1.0331855 ]
+[-0.77769572]
+[ 0.17433994]]
+
+bx 1.023882083, by -0.778255024, bz 0.172244931
+
+Differenz zwischen x Bias End-Start: 3.763284E-02
+Differenz zwischen y Bias End-Start: 5.929050E-03
+Differenz zwischen z Bias End-Start: 1.468488E-03

@@ -36,3 +36,6 @@ def mvMultiplication(vector1, vector2):
     a, b, c, d = toValue(vector1)
     return matrix([[a, -b, -c, -d], [b, a, -d, c], [c, d, a, -b], [d, -c, b, a]]) * vector2
             
+def runningAverage(old, new, weight):
+    K = weight
+    return old + K*(new - old)

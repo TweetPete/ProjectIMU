@@ -1,5 +1,6 @@
 import unittest
-from MathLib import pythagoras, toVector, toValue, mvMultiplication
+from MathLib import pythagoras, toVector, toValue, mvMultiplication,\
+    runningAverage
 from numpy import shape, matrix
 
 class MathLib_test(unittest.TestCase):
@@ -50,7 +51,25 @@ class MathLib_test(unittest.TestCase):
         self.assertEqual(res[0].item(), 30)
         self.assertEqual(res[1].item(), 0)
         self.assertEqual(res[2].item(), 0)
-        self.assertEqual(res[3].item(), 0)       
-
+        self.assertEqual(res[3].item(), 0)
+               
+    def test_runningAverage(self):
+        v = 0.
+        i = 1
+        for new in (1,2,3,4,5,6,7,8,9,10):
+            v = runningAverage(v, new,1/i)
+            i += 1
+        self.assertEqual(i, 11)
+        self.assertEqual(v, 5.5)
+        
+    def test_runningAverage_negativ(self):
+        v = 0.
+        i = 1
+        for new in (1,2,3,4,5,6,7,8,9,10):
+            v = runningAverage(v, -new,1/i)
+            i += 1
+        self.assertEqual(i, 11)
+        self.assertEqual(v, -5.5)       
+         
 if __name__ == '__main__':
     unittest.main() 

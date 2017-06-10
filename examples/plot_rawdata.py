@@ -1,18 +1,24 @@
 import matplotlib.pyplot as plt
 from FileManager import FileManager
 from MathLib import toVector
+from math import pi
 
-f = FileManager()
-filePath = "data\Sample9DoF_R_Session1_Shimmer_B663_Calibrated_SD.csv"
-d = f.readFile(filePath)
+filePath = "data\\arduino10DOF\sample_Hubarm.csv"
+col_gyro = range(1,4) #rad/s
+col_accel = range(4,7) #-g
+col_mag = range(7,10) #muT
+d = FileManager(filePath, columns=col_accel, skip_header = 7)
+v = d.values*-9.80665#*180/pi
 
-for i in range(2000,7000,10):
-    #acceleration = toVector(d[i,0],d[i,1],d[i,2])
-    #rotationRate = toVector(d[i,3],d[i,4],d[i,5])*pi/180 
-    magneticField = toVector(d[i,6],d[i,7],d[i,8])
+start = 0
+l = d.length
+x = v[start:l,0]
+y = v[start:l,1]
+z = v[start:l,2]
+i = range(start,l)
 
-    red_dot, = plt.plot(i, magneticField[0], "ro")
-    blue_dot, = plt.plot(i, magneticField[1], "bo")
-    green_dot, = plt.plot(i, magneticField[2], "go")
+red_dot, = plt.plot(x, "ro")
+blue_dot, = plt.plot(y, "bo")
+green_dot, = plt.plot(z, "go")
     
 plt.show()

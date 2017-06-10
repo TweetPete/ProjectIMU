@@ -8,7 +8,7 @@ from numpy import matrix, insert, long
 
 
 class Quaternion (object):
-
+    
     def __init__(self, euler=toVector(0., 0., 0.)):
         """ Quaternion is initiated by Euler angles
             the angles are given in radians using ZYX-convention
@@ -73,9 +73,16 @@ class Quaternion (object):
 #         psi = atan2(2*(q1*q2 - q0*q3), 2*q0**2 - 1 + 2*q1**2)
     
         # Wikipedia
-        phi = atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 ** 2 + q2 ** 2))
-        theta = asin(2 * (q0 * q2 - q3 * q1))
-        psi = atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 ** 2 + q3 ** 2))
+        try:
+            phi = atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 ** 2 + q2 ** 2))
+            st = 2 * (q0 * q2 - q3 * q1)
+            st =  1 if st > 1 else st #gimbal lock
+            st = -1 if st < -1 else st
+            theta = asin(st)    
+            psi = atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 ** 2 + q3 ** 2))
+        except ValueError:
+            raise ValueError('Quaternion is invalid', q0, q1, q2, q3)
+            
         
         return toVector(phi, theta, psi)
     
