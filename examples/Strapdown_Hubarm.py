@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime 
 from numpy import rad2deg, std
 from math import sqrt, pi
-from Settings import DT
 
 class Strapdown(object):
     def __init__(self):
@@ -48,7 +47,7 @@ def main():
     mag_mean = toVector(0.,0.,0.)
     
     # read sensors
-    filePath = "data\\arduino10DOF\\10min_calib_360.csv"
+    filePath = "data\\arduino10DOF\sample_Hubarm.csv"
     d = FileManager(filePath, columns=range(0,10), skip_header = 7, hasTime = True)
     accelArray, rotationArray, magneticArray = convArray2IMU(d.values)
     
@@ -58,22 +57,21 @@ def main():
 #     diff.insert(0,0.0134981505504)
     
     # realtime 3D plot
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    plt.ion()
-    
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection='3d')
+#     plt.ion()
     start = datetime.now()
     phi_list = []
     theta_list = []
     psi_list = []
-    for i in range(1,int(47999)):   #62247
+    for i in range(1,int(d.length)):   #62247
         #dt = diff[i]
         # for 10 - 15 minutes
         if not s.isInitialized:
             rot_mean = runningAverage(rot_mean, rotationArray[:,i], 1/i)
             acc_mean = runningAverage(acc_mean, accelArray[:,i], 1/i)
             mag_mean = runningAverage(mag_mean, magneticArray[:,i], 1/i)
-            if i >= 45500:#100*60*7.5 :    
+            if i >= 46000:#100*60*7.5 :    
                 s.Initialze(acc_mean, mag_mean)
                 gyroBias = rot_mean#toVector(0.019686476,-0.014544547,0.002910090)
         
@@ -84,16 +82,16 @@ def main():
                 print('Initial gyro Bias\n', gyroBias*180/pi)
         else:
             if i%10 == 0: # plot area
-#                 euler = rad2deg(s.getOrientation())
-#                 plt.figure(1)
-#                 plotVector(i,euler)
+                euler = rad2deg(s.getOrientation())
+                #plt.figure(1)
+                plotVector(i,euler)
 # #                 #plt.figure(2)
 # #                 #plotVector(i,gyroBias)
-                plt.cla()
-                fig.texts = []
-                plot3DFrame(s,ax)
-                plt.draw()
-                plt.pause(0.01)
+#                 plt.cla()
+#                 fig.texts = []
+#                 plot3DFrame(s,ax)
+#                 plt.draw()
+#                 plt.pause(0.01)
 
             phi,theta,psi = rad2deg(s.getOrientation()) 
             phi_list.append(phi)
@@ -109,18 +107,18 @@ def main():
             s.position.update(s.velocity)
                 
             K.timeUpdate(s.quaternion)
-#             if i%10 == 0:
-#                 K.measurementUpdate(acceleration, magneticField, s.quaternion)
-#                                          
-#                 bearingOld = s.getOrientation()        
-#                 errorQuat = Quaternion(K.bearingError)
-#                 s.quaternion *= errorQuat
-#                 #s.quaternion.update(K.bearingError/DT) #angle = rate*DT
-# #                 print(s.quaternion.values)
-#                 bearingNew = s.getOrientation()
-# #                 print("Differenz zwischen neuer und alter Lage \n",rad2deg(bearingNew-bearingOld))
-#                 gyroBias = gyroBias+K.gyroBias 
-#                 K.resetState()
+            if i%10 == 0:
+                K.measurementUpdate(acceleration, magneticField, s.quaternion)
+                                         
+                bearingOld = s.getOrientation()        
+                errorQuat = Quaternion(K.bearingError)
+                s.quaternion *= errorQuat
+                #s.quaternion.update(K.bearingError/DT) #angle = rate*DT
+#                 print(s.quaternion.values)
+                bearingNew = s.getOrientation()
+#                 print("Differenz zwischen neuer und alter Lage \n",rad2deg(bearingNew-bearingOld))
+                gyroBias = gyroBias+K.gyroBias 
+                K.resetState()
     
     print("Differenz zwischen x Bias End-Start: %E" % rad2deg(gyroBias[0]-rot_mean[0]))  
     print("Differenz zwischen y Bias End-Start: %E" % rad2deg(gyroBias[1]-rot_mean[1]))

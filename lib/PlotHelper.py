@@ -15,7 +15,7 @@ def plotVector(x, vector):
     plt.plot(x,y3,symbol)
     
 def plot3DFrame(s,ax):
-    q = s.quaternion
+    q = s.quaternion.getConjugatedQuaternion()
 #     c = toVector(0,0,0)
     xn = toVector(0,1,0)
     yn = toVector(1,0,0)
@@ -40,7 +40,7 @@ def plot3DFrame(s,ax):
     ax.set_ylabel('North')
     ax.set_zlabel('Down')
     
-    phi, theta, psi = q.getEulerAngles()
+    phi, theta, psi = s.getOrientation()
     vx, vy, vz = s.getVelocity()
     px, py, pz = s.getPosition()
     s1 = ' Roll: %.4f\n Pitch: %.4f\n Yaw: %.4f\n\n' % (rad2deg(phi),rad2deg(theta),rad2deg(psi))
