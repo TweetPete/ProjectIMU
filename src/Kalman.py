@@ -1,13 +1,15 @@
-""" Kalman Filter using accelerometer and magnetometer measurements to compensate bearing-error und gyro-bias
-    closed-loop-Error-state
-"""
-
-from numpy import zeros, eye, vstack, power, diag, random, deg2rad
+from numpy import zeros, eye, vstack, power, diag, deg2rad
 from MathLib import toVector, toValue
-from Settings import DT, g, EARTHMAGFIELD, G
+from Settings import g, EARTHMAGFIELD, G
+from Quaternion import Quaternion
+import numpy as np
+from GeoLib import earthCurvature
+from math import cos
 
 class Kalman(object):
-
+    """ Kalman Filter using accelerometer and magnetometer measurements to compensate bearing-error und gyro-bias
+        closed-loop-Error-state
+    """    
     
     def __init__(self):
         """ class contains current state(a priori/a posteriori) 
@@ -17,76 +19,41 @@ class Kalman(object):
         self.bearingError = toVector(0.,0.,0.) #stateElements
         self.gyroBias = toVector(0.,0.,0.)
         
-        gyroNoise = deg2rad(0.03) #deg2rad(0.005) #SensorNoise/systemNoise
-        gyroBiasNoise = deg2rad(0.03)*DT#deg2rad(0.00005) #rad/s #RandomWalk
+        gyroNoise = deg2rad(0.03) #SensorNoise/systemNoise
+        gyroBiasNoise = gyroNoise*0.01 #rad/s #RandomWalk
          
-        Q = eye(6,6)
-        Q[0,0] = gyroNoise**2
-        Q[1,1] = gyroNoise**2
-        Q[2,2] = gyroNoise**2
-        Q[3,3] = gyroBiasNoise**2/100    
-        Q[4,4] = gyroBiasNoise**2/100 
-        Q[5,5] = gyroBiasNoise**2/100
-        self.Q = Q*DT
-        
         accelNoise = 1.20#0.14 #m/s2
-        magnetoNoise = 1.0*25#0.22 #muT
+        magnetoNoise = 1.0*25#0.22 #muT 
+         
+        self.Q = getVKMatrix([gyroNoise]*3+[gyroBiasNoise]*3)
         
-        R = eye(9,9)
-        R[0,0] = accelNoise**2
-        R[1,1] = accelNoise**2
-        R[2,2] = accelNoise**2
-        R[3,3] = accelNoise**2
-        R[4,4] = accelNoise**2
-        R[5,5] = accelNoise**2
-        R[6,6] = magnetoNoise**2
-        R[7,7] = magnetoNoise**2
-        R[8,8] = magnetoNoise**2
-        self.R = R
+        self.R = getVKMatrix([accelNoise]*6+[magnetoNoise]*3)
 
-        #self.P = eye(6, 6)*1e-12
-        P = eye(6,6)
-        P[0,0] = 0.009821580755979031**2
-        P[1,1] = 0.013130360737943313**2
-        P[2,2] = 0.009461406104873041**2
-        P[3,3] = 0.#0.002913**2
-        P[4,4] = 0.#0.002099**2
-        P[5,5] = 0.#0.002994**2
-        self.P = P
+        self.P = getVKMatrix([1e-2]*3+[1e-9]*3)
         
-    def timeUpdate(self,quaternion):
+    def timeUpdate(self,quaternion, DT):
         """ requires current quaternion to compute linearized system-modell at point x0
             state a priori is propagated w/o noise 
             system-noise is uncorrelated
         """
-        rotationMatrix = quaternion.getRotationMatrix()# derivation at point x0(current bearing)
+        rotationMatrix = quaternion.getRotationMatrix()# derivation at point x0(current orientation)
         F = zeros(shape=(6,6))
         F[0:3,3:6] = rotationMatrix # Jacobi-Matrix
-        #print("F = \n", F)
         
-        # use different variable name 
-#         G = zeros(shape =(6,6))
-#         G[0:3,0:3] = rotationMatrix 
-#         G[3:6,3:6] = eye(3,3)
-        #print("G = \n", G)
-        
-        state = vstack((self.bearingError, self.gyroBias))
-        
+        B = zeros(shape =(6,6)) # zu testen
+        B[0:3,0:3] = rotationMatrix 
+        B[3:6,3:6] = eye(3,3)
+                
         # discretisation
         f = eye(6, 6)+F*DT # Transitionmatrix f 
-#         g = G*DT
         
-        newState = f*state #+G*noise
-#        print("Zustandsvektor a priori = :\n",newState)
+        newState = f*vstack((self.bearingError, self.gyroBias))
         self.bearingError = newState[0:3]
         self.gyroBias = newState[3:6]
         
-#         Q = self.getNoiseMatrix(self.gyroNoise, self.gyroBiasNoise)
-
-        self.P = f*self.P*f.transpose() + self.Q#g*self.Q*g.transpose()
-#         print("VKV-Matrix a priori = :\n", self.P)
+        self.P = f*self.P*f.T + B*self.Q*DT*B.T
         
-    def measurementUpdate(self, acceleration, magneticField, quaternion):
+    def measurementUpdate(self, acceleration, magneticField, quaternion, DT):
         """ acceleration and magneticField-measurements are needed to calculate innovation z
             measurement-noise is uncorrelated
             measurement-matrix H is defined at x0
@@ -96,59 +63,168 @@ class Kalman(object):
         H11[0,1] =-g
         H11[1,0] = g
         H22 = zeros(shape =(3,6))
-        H22[0,4] = -g*DT*10
-        H22[1,3] = g*DT*10
-        H11 = -rotationMatrix.transpose()*H11
-        H22 = -rotationMatrix.transpose()*H22
+        H22[0,4] = 0. #-g*DT*10
+        H22[1,3] = 0. #g*DT*10
+        H11 = -rotationMatrix.T*H11
+        H22 = -rotationMatrix.T*H22
         H1 = vstack((H11,H22))
         
         he, hn, _ = toValue(EARTHMAGFIELD)
         
         H2 = zeros(shape=(3,6))
         H2[0,2] = he
-        H2[0,5] = he*DT*10
+        H2[0,5] = 0. #he*DT*10
         H2[1,2] =-hn
-        H2[1,5] =-hn*DT*10
-        H2 = rotationMatrix.transpose()*H2
+        H2[1,5] = 0. #-hn*DT*10
+        H2 = rotationMatrix.T*H2
         H = vstack((H1,H2))
         
-        # discretisation
-        #H = H*DT
-#         print("Messmatrix H =:\n",H) 
-        #h = eye(6, 6)+H*DT # Transitionmatrix h = integral(F)
-        S = H*self.P*H.transpose()+self.R
-#        print("S =:\n", S)
-        K = self.P*H.transpose()*S.I
-        #K = eye(6,6)*10e-6
-        #print("K =:\n", K)
-        self.P = self.P - K*H*self.P # maybe use Josephs-Form
-#         print("VKV-Matrix a posteriori =:\n",self.P)
+        S = H*self.P*H.T+self.R
+        K = self.P*H.T*S.I
         
-        #bearing = quaternion.getEulerAngles()
-        #x0 = vstack((bearing, toVector(0.,0.,0.))) #gyro bias = 0
-        #z0 = vstack((H1*x0,rotationMatrix.transpose()*EARTHMAGFIELD)) # h0(x0, r = 0)
-        z0 = vstack((rotationMatrix.transpose()*-G,rotationMatrix.transpose()*-G,rotationMatrix.transpose()*EARTHMAGFIELD))
-#         print("z0 =:\n",z0)
+        z0 = vstack((rotationMatrix.T*-G,rotationMatrix.T*-G,rotationMatrix.T*EARTHMAGFIELD))
         dz = vstack((acceleration,acceleration,magneticField)) - z0
-#         print("dz =:\n",dz)
-        #print("dz in\% =:\n",dz/z0*100)
-        oldState = vstack((self.bearingError, self.gyroBias))
-        innov = dz - H*oldState
-        #print("innovation = :\n", innov)
-        newState = oldState+K*innov
-#         print("Zustandsvektor a posteriori = :\n", newState)
+        state = vstack((self.bearingError, self.gyroBias))
+        innov = dz - H*state
+        newState = state+K*innov
+        
+        self.P = self.P - K*H*self.P # maybe use Josephs-Form        
         self.bearingError = newState[0:3]
         self.gyroBias = newState[3:6]
         
     def resetState(self):
+        """ resets system state to zero after compensation of absolut values outside of this class
+        """
         self.bearingError = toVector(0.,0.,0.)
         self.gyroBias = toVector(0., 0., 0.)
+
+class KalmanPVO(object):
+    """ 15 state Kalman Filter that estimates position, velocity and orientation based on inertial sensors and 
+        positional/velocity measurements
+    """
+    def __init__(self):
+        # state elements
+        self.posError = toVector(0.,0.,0)
+        self.velError = toVector(0.,0.,0)
+        self.oriError = toVector(0.,0.,0)
+        self.accError = toVector(0.,0.,0)
+        self.gyrError = toVector(0.,0.,0)
         
-    def getNoiseMatrix(self,rms1, rms2):
-        noise1 = random.normal(0,rms1,3)
-        noise2 = random.normal(0,rms2,3)
-        noise = vstack((noise1.reshape(3,1), noise2.reshape(3,1)))
-        nn = power(noise,2)
-        return diag(nn[:,0]) #uncorrelated 
+        sysAccelNoise = 1.2#(0.22*9.81/100)
+        sysGyroNoise = deg2rad(0.03)
+        sysAccelBiasNoise = (0.22*9.81/100)*0.01
+        sysGyroBiasNoise = deg2rad(0.03)*0.01
         
+        positionNoise = 3.#[1.69129426325, 4.70433237356, 5.82882305185]#5.
+        velocityNoise = 0.1#[0.0001, 0.000153573710739, 0.04784321521]#0.05
+        accelNoise = 7.#1.20*3
+        magnetoNoise = 0.4*100
+        
+        self.Q = getVKMatrix([sysAccelNoise]*3+[sysGyroNoise]*3+[sysAccelBiasNoise]*3+[sysGyroBiasNoise]*3)
+        self.Q[0:3,0:3] = self.Q[0:3,0:3]*10
+        self.Q[3:6,3:6] = self.Q[3:6,3:6]*1000
+        self.Q[6:9,6:9] = self.Q[6:9,6:9]
+        self.Q[9:12,9:12] = self.Q[9:12,9:12]
+        self.P = getVKMatrix([1.]*3+[1e-2]*3+[1e-2]*3+[10.]*3+[1e-9]*3)
+        self.R = getVKMatrix([positionNoise]*3+[velocityNoise]*3+[accelNoise]*3+[magnetoNoise]*3)
     
+    def timeUpdate(self, acceleration,  quaternion, DT):
+        rotationMatrix = quaternion.getRotationMatrix()# derivation at point x0(current orientation)
+        F = np.matrix(zeros(shape=(15,15)))
+        subMatrix = zeros(shape=(3,3))
+        an, ae, ad = quaternion.vecTransformation(acceleration) # an_ib
+        subMatrix[0,1] =  ad
+        subMatrix[0,2] = -ae
+        subMatrix[1,0] = -ad
+        subMatrix[1,2] =  an
+        subMatrix[2,0] =  ae
+        subMatrix[2,1] = -an
+        F[0:3,3:6] = eye(3,3)
+        F[3:6,6:9] = subMatrix
+        F[3:6,9:12] = -rotationMatrix
+        F[6:9,12:15] = -rotationMatrix
+        
+        B = np.matrix(zeros(shape=(15,12)))
+        B[3:6,0:3] = rotationMatrix
+        B[6:9,3:6] = rotationMatrix
+        B[9:12,6:9] = eye(3,3)
+        B[12:15,9:12] = eye(3,3)
+        
+        f = eye(15,15)+F*DT # Transitionmatrix f 
+        
+        newState = f*vstack((self.posError, self.velError, self.oriError, self.accError, self.gyrError))
+        self.posError = newState[0:3]
+        self.velError = newState[3:6]
+        self.oriError = newState[6:9]
+        self.accError = newState[9:12]
+        self.gyrError = newState[12:15]
+
+        self.P = f*self.P*f.T + B*self.Q*DT*B.T
+
+    def measurementUpdate(self, quaternion, IMUposition, IMUvelocity, position, velocity, acceleration, magneticField, gpsAvailable):
+        hn, he, _ = toValue(EARTHMAGFIELD)
+        rotationMatrix = quaternion.getRotationMatrix()    
+            
+        H = np.matrix(zeros(shape=(12,15)))
+        subMatrix1 = np.matrix(zeros(shape=(3,3)))
+        subMatrix1[0,1] = -g
+        subMatrix1[1,0] =  g
+        subMatrix2 = np.matrix(zeros(shape=(3,3)))
+        subMatrix2[0,2] =  he
+        subMatrix2[1,2] = -hn
+        H[0:6,0:6] = eye(6,6)
+        H[6:9,6:9] = -rotationMatrix.T * subMatrix1
+        H[9:12,6:9] = rotationMatrix.T * subMatrix2
+        
+        S = H*self.P*H.T+self.R #Messrauschen !
+        K = self.P*H.T*S.I
+        if not gpsAvailable: 
+            K[:,0:6] = 0.
+            K[9:12,:] = 0.
+            K[0:6,:] = 0.
+        
+        dz = self.getMeasurementVector(IMUposition, IMUvelocity, rotationMatrix, position, velocity, acceleration, magneticField)
+        state = vstack((self.posError, self.velError, self.oriError, self.accError, self.gyrError))
+        innov = dz - H*state
+        newState = state+K*innov
+        self.posError = newState[0:3]
+        self.velError = newState[3:6]
+        self.oriError = newState[6:9]
+        self.accError = newState[9:12]
+        self.gyrError = newState[12:15]
+        
+        self.P = self.P - K*H*self.P # maybe use Josephs-Form 
+    
+    def getMeasurementVector(self, IMUposition, IMUvelocity, rotationMatrix, position, velocity, acceleration, magneticField):
+        z0 = vstack((IMUposition.values,IMUvelocity.values,rotationMatrix.T*-G,rotationMatrix.T*EARTHMAGFIELD))
+        dz = vstack((position,velocity,acceleration,magneticField)) - z0
+        lat,_,h = toValue(IMUposition.values)
+        Rn, Re = earthCurvature(IMUposition.a,IMUposition.f,lat)
+        dz[0] = dz[0]*(Rn-h)
+        dz[1] = dz[1]*(Re-h)*cos(lat)
+        return dz
+        
+    def resetState(self):
+        self.posError = toVector(0.,0.,0.)
+        self.velError = toVector(0.,0.,0.)
+        self.oriError = toVector(0.,0.,0.)
+        self.accError = toVector(0.,0.,0.)
+        self.gyrError = toVector(0.,0.,0.)
+    
+def getVKMatrix(rms):
+    """ rms is a list of rms values
+        returns an array with n x n, where n is the length of rms
+    """
+    nn = power(rms,2)
+    return np.matrix(diag(nn))
+    
+def main():
+    print(getVKMatrix([1]*3+[0.5]*3))
+    K = KalmanPVO()
+    print(K.Q)
+    q = Quaternion()
+    K.timeUpdate(toVector(0.1, 0.2, 9.81), q, 0.01)
+    print(K.P)
+    
+if __name__ == "__main__":
+    main() 

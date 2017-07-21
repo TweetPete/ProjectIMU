@@ -1,11 +1,12 @@
 from MathLib import pythagoras, toVector, toValue
-from Settings import g, DECANGLE
-from math import atan2, asin, isclose
+from Settings import g, DECANGLE, EARTHMAGFIELD, G
+from math import atan2, asin, isclose, pi
 from Quaternion import Quaternion
+from numpy import rad2deg
 
 class Euler(object):
         
-    def __init__(self, acceleration, magneticField):
+    def __init__(self, acceleration = -G, magneticField = EARTHMAGFIELD):
         """ calculates the bearing from raw acceleration and magnetometer values
             accelaration in m/s2 and magnetic field in gauss
         """
@@ -26,15 +27,21 @@ class Euler(object):
         
         self.values = toVector(phi, theta, psi)
 
-#     def update(self, rotationRate):
-#         """ updates bearing by just using Euler angles and the rotation rate 
-#         """
-#         
-#         phi, theta, _ = toValue(self.values)
-#         wx, wy, wz = toValue(rotationRate * DT)
-#                 
-#         dPhi = (wy * sin(phi) + wz * cos(phi)) * tan(theta) + wx 
-#         dTheta = wy * cos(phi) - wz * sin(phi)
-#         dPsi = (wy * sin(phi) + wz * cos(phi)) / cos(theta)
-#         
-#         self.values += toVector(dPhi, dTheta, dPsi) 
+    def __str__(self):
+        return '{:deg}'.format(self)
+    
+    def __format__(self, f):
+        phi, theta, psi = toValue(self.values)
+        if f == 'deg':
+            return 'Roll: {:4.3f} deg, Pitch: {:4.3f} deg, Yaw: {:4.3f} deg'.format(rad2deg(phi), rad2deg(theta), rad2deg(psi))
+        elif f== 'rad':
+            return 'Roll: {:4.3f} rad, Pitch: {:4.3f} rad, Yaw: {:4.3f} rad'.format(phi, theta, psi)
+
+def main():
+    E = Euler()
+    E.values = toVector(pi/2, pi/4, pi/6)
+    print('{:rad}'.format(E))
+    print(E)
+    
+if __name__ == "__main__":
+    main()  

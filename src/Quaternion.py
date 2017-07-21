@@ -2,10 +2,8 @@
 """
 
 from MathLib import pythagoras, toVector, toValue, mvMultiplication
-from Settings import DT
 from math import sin, cos, atan2, asin
 from numpy import matrix, insert, long
-
 
 class Quaternion (object):
     
@@ -26,6 +24,10 @@ class Quaternion (object):
         
         self.values = toVector(q0, q1, q2, q3)
     
+    def __str__(self):
+        q0, q1, q2, q3 = toValue(self.values)
+        return 'q0: {:2.3f}, q1: {:2.3f}, q2: {:2.3f}, q3: {:2.3f}'.format(q0,q1,q2,q3)    
+
     def __mul__(self, value):
         new_quat = Quaternion()
         if isinstance(value, Quaternion):
@@ -40,15 +42,6 @@ class Quaternion (object):
             represents the same relation between coordinate systems
         """
         q0, q1, q2, q3 = toValue(self.values)
-#         r11 = 2 * pow(self.q0, 2) - 1 + 2 * pow(self.q1, 2)
-#         r22 = 2 * pow(self.q0, 2) - 1 + 2 * pow(self.q2, 2)
-#         r33 = 2 * pow(self.q0, 2) - 1 + 2 * pow(self.q3, 2)
-#         r12 = 2 * (self.q1 * self.q2 + self.q0 * self.q3)
-#         r13 = 2 * (self.q1 * self.q3 - self.q0 * self.q2)
-#         r23 = 2 * (self.q2 * self.q3 + self.q0 * self.q1)
-#         r21 = 2 * (self.q1 * self.q2 - self.q0 * self.q3)
-#         r31 = 2 * (self.q1 * self.q3 + self.q0 * self.q2)
-#         r32 = 2 * (self.q2 * self.q3 - self.q0 * self.q1)
         
         r11 = q0**2+q1**2-q2**2-q3**2
         r22 = q0**2-q1**2+q2**2-q3**2
@@ -82,11 +75,10 @@ class Quaternion (object):
             psi = atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 ** 2 + q3 ** 2))
         except ValueError:
             raise ValueError('Quaternion is invalid', q0, q1, q2, q3)
-            
         
         return toVector(phi, theta, psi)
     
-    def update(self, rotationRate):
+    def update(self, rotationRate, DT):
         """ updates the quaternion via the rotation of the last period
             the rotation rate is a 3x1 vector - wx, wy, wz
             approximated quaternion differential equation
@@ -139,7 +131,7 @@ class Quaternion (object):
 def main():
     q = Quaternion()
     q2 = Quaternion()
-    z = q*2.
+    z = q*q2
     print(z)
     
 if __name__ == "__main__":

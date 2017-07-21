@@ -1,7 +1,7 @@
 """ class Velocity propagates the velocity based on previous velocity and acceleration
 """
-from MathLib import toVector
-from Settings import DT, G
+from MathLib import toVector, toValue
+from Settings import G
 
 class Velocity(object):
     
@@ -10,10 +10,30 @@ class Velocity(object):
             units in m/s
         """
         self.values = vector
+    
+    def __str__(self):
+        vx, vy, vz = toValue(self.values)
+        return 'vx: {:4.2f} m/s, vy: {:4.3f} m/s, vz: {:4.3f} ms'.format(vx, vy, vz)    
         
-    def update(self, acceleration, quaternion):
+    def update(self, acceleration, quaternion, DT):
         """ updates velocity based on acceleration
             acceleration given in m/s2 
         """
         an = quaternion.vecTransformation(acceleration)        
         self.values += DT * (an + G)
+        
+    def correct(self, vector):
+        self.values += vector
+        
+def calcVelocity(p1,p0,t1,t0):
+    """ calculates a velocity-vector based on the positional change and the passed time 
+        p1, p0 are 3x1 vectors - t1, t0 is a scalar
+    """
+    dp = p1 - p0
+    dt = t1 - t0
+    if dt == 0:
+        v = toVector(0., 0., 0.)         
+    else:
+        v = dp / abs(dt) 
+    return v
+    
