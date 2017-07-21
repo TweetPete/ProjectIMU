@@ -1,18 +1,17 @@
 import sys, getopt
 from datetime import datetime
 from Strapdown import Strapdown
-from LowPassFilter import LowPassFilter
 from MathLib import toVector, toValue, runningAverage
 from Settings import g
 from numpy import rad2deg
-from Kalman import Kalman
+from Kalman import Kalman, KalmanPVO
 from Quaternion import Quaternion
+from GeoLib import ell2xyz
+from Position import EllipsoidPosition
+from Euler import Euler
 
 sys.path.append('.')
-import RTIMU
-import os.path
-import time
-import math
+import RTIMU, os.path, threading, NMEA_stream
 
 SETTINGS_FILE = "RTIMULib_peter"
 
@@ -31,28 +30,33 @@ if (not imu.IMUInit()):
 else:
     print("IMU Init Succeeded")
 
-# this is a good time to set any fusion parameters
-
 imu.setSlerpPower(0.02)
 imu.setGyroEnable(True)
 imu.setAccelEnable(True)
 imu.setCompassEnable(True)
+print("Recommended Poll Interval: %dmS\n" % imu.IMUGetPollInterval())
 
-poll_interval = 10.0 #imu.IMUGetPollInterval()
-print("Recommended Poll Interval: %dmS\n" % poll_interval)
+SatObs = NMEA_stream.GNSS()
+thread = threading.Thread(target=SatObs.stream)
+thread.daemon = True
+thread.start()
+print("Started GPS stream in a new thread")
 
 print("Initializing ...\n")
-
 s = Strapdown()
-K = Kalman()
-rot_mean = toVector(0.,0.,0.)
+K = KalmanPVO()
+rot_mean = toVector(0.018461137,-0.01460140625,0.002765854)
+accelBias = toVector(0., 0., 0.)
 acc_mean = toVector(0.,0.,0.)
 mag_mean = toVector(0.,0.,0.)
 gyroBias = toVector(0.,0.,0.)
-dt_mean = 0.
+pos_mean = s.getPosition()
+dt_mean = 0.0
+t_old = 0.
 
 i = 1
-init_time = 1/6 #min
+j = 1
+init_time = 10 #sek
 
 while True:
     if imu.IMURead():
@@ -61,53 +65,63 @@ while True:
         gyro = data["gyro"]
         gyro_v = toVector(gyro[0],gyro[1],gyro[2])-gyroBias
         accel = data["accel"]   
-        accel_v = toVector(accel[0],accel[1],accel[2])*-9.80665 
+        accel_v = toVector(accel[0],accel[1],accel[2])*-9.80665 -accelBias
         mag = data["compass"]
         mag_v = toVector(mag[0],mag[1],mag[2])
-        t = data["timestamp"]
+        t = data["timestamp"]/1e6
+        delta = t - t_old
+        t_old = t
       
         if not s.isInitialized:
             rot_mean = runningAverage(rot_mean, gyro_v, 1/i)
             acc_mean = runningAverage(acc_mean, accel_v, 1/i)
             mag_mean = runningAverage(mag_mean, mag_v, 1/i)
-            if (i*poll_interval/1000)%60 == 0:
-                print('Initialized in %.1f minutes\n' % (init_time-i*poll_interval/1000./60.,))
-            if i*poll_interval/1000 >= init_time :
-                s.Initialze(acc_mean, mag_mean)
+            if SatObs.new:
+                pos_mean = runningAverage(pos_mean, SatObs.pos, 1/j)
+                SatObs.new = False
+                j += 1 
+            if i*dt_mean >= init_time :
+                s.Initialze(acc_mean, mag_mean, pos_mean)
                 gyroBias = rot_mean
             
-                print('STRAPDOWN INITIALIZED with %i values\n' % (i,))    
-                print('Initial bearing\n', s.getOrientation())
-                print('Initial velocity\n', s.getVelocity())
-                print('Initial position\n', s.getPosition())
+                print('STRAPDOWN INITIALIZED with %i samples and %i position measurements\n' % (i, j))   
+                e = Euler() 
+                e.values = s.getOrientation()
+                print('Initial bearing\n', e)
+                print('Initial velocity\n', s.velocity)
+                print('Initial position\n ', s.position)
                 print('Initial gyro Bias\n', gyroBias)
         else:
-            s.quaternion.update(gyro_v)
-            s.velocity.update(accel_v, s.quaternion)
-            s.position.update(s.velocity)
-            phi, theta, psi = toValue(rad2deg(s.getOrientation()))
+            s.quaternion.update(gyro_v, dt_mean)
+            s.velocity.update(accel_v, s.quaternion, dt_mean)
+            s.position.update(s.velocity, dt_mean)
             
-            K.timeUpdate(s.quaternion)
-            #if i%10 == 0:
-            #    K.measurementUpdate(accel_v, mag_v, s.quaternion)             
-            #    errorQuat = Quaternion(K.bearingError)
-            #    s.quaternion *= errorQuat
-            #    gyroBias += K.gyroBias 
-            #    K.resetState()
+            K.timeUpdate(accel_v, s.quaternion, dt_mean)
+            if SatObs.new or i%10 == 0: 
+                K.measurementUpdate(s.quaternion, s.position, s.velocity, SatObs.pos, SatObs.vel, accel_v, mag_v, SatObs.new)
+                errorQuat = Quaternion(K.oriError)
+                s.quaternion = errorQuat * s.quaternion
+                s.position.correct(K.posError)
+                s.velocity.correct(K.velError)  
+                gyroBias = gyroBias + K.gyrError
+                accelBias = accelBias + K.accError
+                K.resetState()  
+                SatObs.new = False
             
             if i%50 == 0: #print area
-                print('Roll: %9.3f, Pitch: %9.3f, Yaw: %9.3f' % (phi, theta, psi))
-                #print('dt_mean: %f' % dt_mean)
-                #vx, vy, vz = toValue(s.getVelocity())
-                #print('vx: %.2f, vy: %.2f, vz: %.2f' % (vx,vy,vz))
-                
-        end = datetime.now()
-        diff = end-start
-        #print(diff.total_seconds())
-        if (poll_interval*1./1000.)>diff.total_seconds():
-            time.sleep(poll_interval/1000 - diff.total_seconds())
-        end2 = datetime.now()
-        diff_dt = end2 - start
-        #dt_mean = runningAverage(dt_mean, t/1e6, 1/i) 
-        i += 1
-        #print(t/1e6)
+                phi, theta, psi = toValue(rad2deg(s.getOrientation()))
+                vx, vy, vz = toValue(s.getVelocity())
+                x, y, z = toValue(s.getPosition())
+                time_str = '%.6f, %3.1f' % (t, 1/dt_mean)
+                euler_str = '%9.3f, %9.3f, %9.3f' % (phi, theta, psi)
+                velo_str = '%2.3f, %2.3f, %2.3f' % ( vx, vy, vz)
+                pos_str = '%3.7f, %3.7f, %4.3f' % ( rad2deg(x), rad2deg(y), z)
+                print(time_str + ', ' + euler_str + ', ' + velo_str + ', ' + pos_str)
+#                 print('Roll: %9.3f, Pitch: %9.3f, Yaw: %9.3f' % (phi, theta, psi))
+#                 print(s.position)
+#                 print(s.velocity)
+#                 print('dt mean: {:3.1f}Hz'.format(1/dt_mean))
+
+        if i != 1:
+            dt_mean = runningAverage(dt_mean, delta, 1)
+        i += 1   
