@@ -1,8 +1,12 @@
-from MathLib import toVector, toValue
+from numpy import linspace
+lat1 = 52.0
+lon1 = 13.0
 
+lat2 = 52.5
+lon2 = 13.5
 
-vec = (toVector(1.0, 2, 3))
-print(vec)
-a, b, c = toValue(vec)
-print(a, b, c)
-print(type(a))
+DT = 0.01
+vx = 1.
+
+lat_list = linspace(lat1,lat2,num = 10)
+print(lat_list)
