@@ -4,7 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from numpy import rad2deg
 
 def plotVector(x, vector):
-    if not vector.any(): raise ValueError( "Vector is not valid" )
+#     if not vector.any(): raise ValueError( "Vector is not valid" )
     y1, y2, y3 = toValue(vector)
     symbol = 'ro'
     plt.subplot(311)
@@ -12,8 +12,23 @@ def plotVector(x, vector):
     plt.subplot(312)
     plt.plot(x,y2,symbol)
     plt.subplot(313)
+#     if y3<=0:
+#         y3 += 360. 
     plt.plot(x,y3,symbol)
     
+def plotRGB(x,vector):
+    y1, y2, y3 = toValue(vector)
+    handle1, = plt.plot(x,y1,'ro')
+    handle2, = plt.plot(x,y2,'go')
+    handle3, = plt.plot(x,y3,'bo')
+    plt.grid()
+    plt.legend([handle1, handle2, handle3], ['North','East','Down'])
+    
+def plot2Dcoordinates(position):
+    x,y,_ = toValue(position)
+    symbol = 'ro'
+    plt.plot(x,y,symbol)
+
 def plot3DFrame(s,ax):
     q = s.quaternion.getConjugatedQuaternion()
 #     c = toVector(0,0,0)
@@ -47,7 +62,15 @@ def plot3DFrame(s,ax):
     s2 = ' vx: %.2f\n vy: %.2f\n vz: %.2f\n\n' % (vx, vy, vz)
     s3 = ' px: %.2f\n py: %.2f\n pz: %.2f\n' % (px,py,pz)
     plt.figtext(0, 0, s1+s2+s3)
-    
+
+
+def plot3Dcoordinates(ax,vector):
+    x,y,z = toValue(vector)
+    ax.plot(x,y,zs = z)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
 def main():
     vec = toVector(1.,2.,0.)
     plotVector(1,vec)

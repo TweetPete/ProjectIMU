@@ -2,7 +2,7 @@
 """
 
 from math import sqrt
-from numpy import shape, matrix, size, long
+from numpy import shape, matrix, size, long, NaN, append
 
 def pythagoras(*sites):
     res = 0
@@ -31,6 +31,13 @@ def toValue(mat):
         return a, b, c, d
     else:
         return a, b, c
+
+def resize(array1, array2):
+    if array1.shape > array2.shape:
+        array2 = append(array2, NaN)
+    elif array1.shape < array2.shape:
+        array1 = append(array1, NaN)
+    return array1, array2
 
 def mvMultiplication(vector1, vector2):
     a, b, c, d = toValue(vector1)
