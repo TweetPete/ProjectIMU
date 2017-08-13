@@ -1,15 +1,17 @@
 from numpy import genfromtxt, deg2rad, append, diag, std
 from os.path import dirname, join, abspath
 from os import getcwd
+""" File import library 
+"""
+
 import pynmea2
 from Position import EllipsoidPosition
 from MathLib import toVector
 from GeoLib import ell2xyz
-from Kalman import KalmanPVO
-from math import sqrt
 
 class CSVImporter(object):
-    
+    """ function for importing CSV data
+    """
     def __init__(self, fileStr, delimiter = ',', columns = (0, 2,3,4, 6,7,8, 10,11,12), hasTime = False, skip_header = 0):
         """ reads txt-file in project directory 
             skips lines with inconsistent columns 
@@ -28,12 +30,16 @@ class CSVImporter(object):
         self.length = len(self.values)
     
     def getSampleRate(self):
+        """ gets average time step size 
+        """
         numTime = self.values[:,0]
         timeSpan = numTime[-1]-numTime[0]
         return timeSpan/len(numTime)
         
         
 class NMEAImporter(object):
+    """ imports either a file or another source of NMEA data
+    """
     def __init__(self, fileStr):
         """ reads NMEA string and converts them to a List of cartesian Positions and a list of the 
             related time in seconds
@@ -58,7 +64,7 @@ class NMEAImporter(object):
                         lon = deg2rad(msg.longitude)
                         p_geo = EllipsoidPosition(toVector(lat,lon,he))
                         p_cart = ell2xyz(p_geo)
-                        t = msg.timestamp #datetime.time()
+                        t = msg.timestamp 
                         t_sec = (t.hour*3600 + t.minute*60 + t.second)                    
                         self.P.append(p_cart)
                         self.t.append(t_sec)
@@ -68,28 +74,13 @@ class NMEAImporter(object):
         
 def getNumberOfLines(fname):
     return sum(1 for line in open(fname))
-
-def export(fileStr, sampleName, K, phi_list, theta_list):
-    projectPath = dirname(abspath(getcwd()))
-    filePath = join(projectPath,fileStr)
-    with open(filePath, 'w') as file: 
-        file.write('Samplefile used: ' + sampleName + '\n')
-        file.write('\n Analyse der Lage: \n' )
-        file.write('Phi: RMS ' + str(std(phi_list)) + '\t MAX ' + str(max(phi_list)) + '\t MIN ' + str(min(phi_list)) + ' deg \n')
-        file.write('Theta: RMS ' + str(std(theta_list)) + '\t MAX ' + str(max(theta_list)) + '\t MIN ' + str(min(theta_list)) + ' deg \n')
-
-        file.write('\n VKM des Systemrauschens: \n')
-        file.write(str(K.Q))
-        file.write('\n VKM des Messrauschen: \n')
-        file.write(str(K.R))
     
 def main():
-    K = KalmanPVO()
-    phi_list = [0,1,2,3,2,5,6,7]
-    theta_list = [0,1,2,3,2,5,6,7]
-    fileStr = "data\\test_NMEA_output.csv"
-    export('root_test.txt', fileStr, K, phi_list, theta_list)   
-    
+    fileStr = "data\\arduino10DOF\\linie_dach_imu.csv"
+    data = CSVImporter(fileStr, columns=range(0, 13), skip_header=7, hasTime=True)  
+    print(data.values[0,0])
+    print(1/data.sampleRate)
+    print(data.length)
 
 if __name__ == "__main__":
     main() 

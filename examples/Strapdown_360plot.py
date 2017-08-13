@@ -6,14 +6,13 @@ from Position import Position
 from Quaternion import Quaternion
 from Velocity import Velocity
 from Kalman import Kalman
-from FileManager import FileManager
-from PlotHelper import plotVector, plot3DFrame
+from FileManager import CSVImporter
+from PlotHelper import plot3DFrame
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from datetime import datetime 
 from numpy import rad2deg, std
 from math import sqrt, pi
-from Settings import DT
 
 class Strapdown(object):
     def __init__(self):
@@ -48,14 +47,14 @@ def main():
     mag_mean = toVector(0.,0.,0.)
     
     # read sensors
-    filePath = "data\\arduino10DOF\\10min_calib_360.csv"
-    d = FileManager(filePath, columns=range(0,10), skip_header = 7, hasTime = True)
+    filePath = "data\\adafruit10DOF\\10min_calib_360.csv"
+    d = CSVImporter(filePath, columns=range(0,10), skip_header = 7, hasTime = True)
     accelArray, rotationArray, magneticArray = convArray2IMU(d.values)
     
     # variable sample rate test
-#     time = d.values[:,0]
-#     diff = ([x - time[i - 1] for i, x in enumerate(time)][1:])
-#     diff.insert(0,0.0134981505504)
+    time = d.values[:,0]
+    diff = ([x - time[i - 1] for i, x in enumerate(time)][1:])
+    diff.insert(0,0.0134981505504)
     
     # realtime 3D plot
     fig = plt.figure()
@@ -67,7 +66,7 @@ def main():
     theta_list = []
     psi_list = []
     for i in range(1,int(47999)):   #62247
-        #dt = diff[i]
+        dt = diff[i]
         # for 10 - 15 minutes
         if not s.isInitialized:
             rot_mean = runningAverage(rot_mean, rotationArray[:,i], 1/i)
@@ -84,11 +83,6 @@ def main():
                 print('Initial gyro Bias\n', gyroBias*180/pi)
         else:
             if i%10 == 0: # plot area
-#                 euler = rad2deg(s.getOrientation())
-#                 plt.figure(1)
-#                 plotVector(i,euler)
-# #                 #plt.figure(2)
-# #                 #plotVector(i,gyroBias)
                 plt.cla()
                 fig.texts = []
                 plot3DFrame(s,ax)
@@ -104,11 +98,11 @@ def main():
             rotationRate = rotationArray[:,i]-gyroBias
             magneticField = magneticArray[:,i]
             
-            s.quaternion.update(rotationRate)
-            s.velocity.update(acceleration, s.quaternion)
-            s.position.update(s.velocity)
+            s.quaternion.update(rotationRate, dt)
+            s.velocity.update(acceleration, s.quaternion, dt)
+            s.position.update(s.velocity, dt)
                 
-            K.timeUpdate(s.quaternion)
+            K.timeUpdate(s.quaternion, dt)
 #             if i%10 == 0:
 #                 K.measurementUpdate(acceleration, magneticField, s.quaternion)
 #                                          

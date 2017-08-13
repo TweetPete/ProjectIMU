@@ -1,14 +1,12 @@
-""" class Position discribes the propagation of the position in a navigational frame
-    depending a velocity and the previous position
-"""
-
 from MathLib import toVector, toValue
 from GeoLib import earthCurvature
 from numpy import eye, rad2deg
 from math import cos
 
 class Position(object):
-    
+    """ class Position discribes the propagation of the position in a navigational frame
+        depending a velocity and the previous position
+    """
     def __init__(self, vector=toVector(0., 0., 0.)):
         """ initialized by a position-vector
             units are given in m 
@@ -26,8 +24,10 @@ class Position(object):
         self.values += DT * velocity.values
         
 
-
 class EllipsoidPosition(object):
+    """ class EllipsoidPosition discribes the propagation of the position in a ECEF-frame
+        depending a velocity and the previous position
+    """
     def __init__(self, vector=toVector(0., 0., 0.)):
         """ gets initialized by position-vector 
             units are kept in radian using lat, lon, h-order 
@@ -37,14 +37,13 @@ class EllipsoidPosition(object):
         self.a = 6378137.0 #GRS80
         self.b = 6356752.314
         self.f = (self.a - self.b)/self.a
-#         self.f = 1/298.257223563
         
     def __str__(self):
         lat, lon, h = toValue(self.values)
         return 'Lat: {:4.6f} deg, Lon: {:4.6f} deg, H: {:4.3f} m'.format(rad2deg(lat), rad2deg(lon), h)        
         
     def update(self, velocity, DT):
-        """ updates the current position via a velocity-vector 
+        """ updates current position based on previous position and velocity 
             velocity-object has attribute values in m/s 
         """
         lat,_,h = toValue(self.values)

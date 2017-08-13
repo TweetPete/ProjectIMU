@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+# from unittest.mock import patch
 from Quaternion import Quaternion
 from math import pi, sin, cos
 from MathLib import toVector, toValue, pythagoras
@@ -52,33 +52,33 @@ class Quaternion_test(unittest.TestCase):
         self.assertAlmostEqual(-0.51, theta, delta=0.001)
         self.assertAlmostEqual(pi, psi, delta=0.001)
         
-    @patch('Quaternion.DT',0.01)    
+    #@patch('Quaternion.DT',0.01)    
     def test_update_without_rotation(self):
         q = Quaternion()
-        q.update(toVector(0.0,0.0,0.0))
+        q.update(toVector(0.0,0.0,0.0), 0.01)
         q0,q1,q2,q3 = toValue(q.values)
         self.assertEqual(q0, 1.)
         self.assertEqual(q1, 0.)
         self.assertEqual(q2, 0.)
         self.assertEqual(q3, 0.)
         
-    @patch('Quaternion.DT',0.01)    
+    #@patch('Quaternion.DT',0.01)    
     def test_update(self):
         q = Quaternion()
         rotationRate = toVector(-100.,50.,120.)
-        q.update(rotationRate)
+        q.update(rotationRate,0.01)
         q0,q1,q2,q3 = toValue(q.values)
         self.assertAlmostEqual(q0, 0.68217, delta=0.0001)
         self.assertAlmostEqual(q1, -0.44581, delta=0.0001)
         self.assertAlmostEqual(q2, 0.22291, delta=0.0001)
         self.assertAlmostEqual(q3, 0.53498, delta=0.0001)
         
-    @patch('Quaternion.DT',0.01)
+    #@patch('Quaternion.DT',0.01)
     def test_update_180(self):
         q = Quaternion()
         rotationRate = toVector(0.,deg2rad(5.),0.) #rad/s
         for _ in range(3600):
-            q.update(rotationRate)
+            q.update(rotationRate,0.01)
         q0,q1,q2,q3 = toValue(q.values)
         self.assertAlmostEqual(q0, 0.0 , delta=0.0001)
         self.assertAlmostEqual(q1, 0.0, delta=0.0001)

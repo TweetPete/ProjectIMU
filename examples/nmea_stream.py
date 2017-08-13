@@ -3,7 +3,7 @@ from MathLib import toVector
 from Position import EllipsoidPosition, Position
 from GeoLib import ell2xyz
 from Velocity import Velocity
-from numpy import deg2rad, rad2deg
+from numpy import deg2rad
 
 msg = pynmea2.parse("$GPGGA,132525.000,5233.3292,N,01320.6101,E,2,07,1.38,25.9,M,44.7,M,0000,0000*52")
 # msg = pynmea2.parse("GPGSA,A,3,14,12,32,29,24,25,31,,,,,,2.67,1.38,2.29*0D")
@@ -16,7 +16,7 @@ p0 = ell2xyz(p0) #xyz
 t0 = msg.timestamp
 t0 = (t0.hour*3600 + t0.minute*60 + t0.second - 1)
 
-with open('D:\Masterarbeit\Code\Eclipse\ProjectIMU\data\GPRMC_stream.csv','r') as fread:
+with open('D:\Masterarbeit\Code\Eclipse\ProjectIMU\data\\UltimateGPS\GPRMC_stream.csv','r') as fread:
     streamreader = pynmea2.NMEAStreamReader(fread, 'ignore')
     while 1:
         for msg in streamreader.next():

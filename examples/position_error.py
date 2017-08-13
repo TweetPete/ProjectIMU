@@ -5,7 +5,7 @@ from matplotlib.pyplot import title, xlabel, ylabel
 
 g = 9.81
 phi = 0 * pi / 180
-theta = 5 * pi / 180
+theta = 1 * pi / 180
 psi = 0 * pi / 180
 
 # bw = toVector((theta), -(phi), 0)  # 5degree/s
@@ -32,7 +32,7 @@ for t in range(60):
 plt.legend([red_dot, blue_dot, green_dot], ["X-Pos", "Y-Pos", "Z-Pos"])
 title('Positionsfehler durch Drehratenbias')
 
-xlabel('Zeit t')
-ylabel('Positionsfehler in m')
+xlabel('Zeit in [sek]')
+ylabel('Positionsfehler in [m]')
 plt.show()
 

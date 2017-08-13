@@ -2,13 +2,12 @@ import gpsd, time
 from math import cos, sin, pi
 from MathLib import toVector
 
-from random import uniform, random
-
 class GNSS(object):
     def __init__(self ):
         self.pos = toVector(0.,0.,0.)
         self.vel = toVector(0.,0.,0.)
-        self.error = toVector(0.,0.,0.)
+        self.PDOP = toVector(0.,0.,0.)
+        self.sats = 0
         self.time = time.time()
         self.new = False # True when new measurement was received
         self.connected = False
@@ -24,6 +23,7 @@ class GNSS(object):
     
     def stream(self):
         self.connect()
+
         while True: 
             try:
                 pkt = gpsd.get_current()
@@ -32,16 +32,20 @@ class GNSS(object):
                 vy = pkt.speed()*sin(az)
                 self.pos = toVector(pkt.lat*pi/180, pkt.lon*pi/180, pkt.altitude())
                 self.vel = toVector(vx, vy, pkt.climb)
-                #self.mode = pkt.mode
+                self.PDOP = toVector(pkt.error['x'], pkt.error['y'], pkt.error['v'])
+                self.sats = pkt.sats
                 self.time = time.time()
-                self.new = True # is True when new GPS measurement arrived and has not been used
+                self.new = True 
                 if __name__ == '__main__':
-                    print("%.1f, %3.7f, %3.7f, %4.1f, %3.3f, %3.3f, %3.3f, %.2f, %.2f, %.2f" %
-                           (time.time(), pkt.lat, pkt.lon, pkt.altitude(), vx, vy, pkt.climb, pkt.error['x'], pkt.error['y'], pkt.error['v']))
+                    print("%.1f, %3.7f, %3.7f, %4.1f, %3.3f, %3.3f, %3.3f, %.2f, %.2f, %.2f, %2i" %
+                           (time.time(), pkt.lat, pkt.lon, pkt.altitude(), vx, vy, pkt.climb,
+                            pkt.error['x'], pkt.error['y'], pkt.error['v'], pkt.sats))
             except : 
                 #raise
                 if __name__ == '__main__':
                     print("No 3D fix available")
+                    self.PDOP = toVector(1e6, 1e6,1e6)
+                    self.sats = 0
                 else: 
                     pass
             time.sleep(1)

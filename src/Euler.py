@@ -9,6 +9,8 @@ class Euler(object):
     def __init__(self, acceleration = -G, magneticField = EARTHMAGFIELD):
         """ calculates the bearing from raw acceleration and magnetometer values
             accelaration in m/s2 and magnetic field in gauss
+            angles are saved in radians
+            calling w/o arguments creates a vector with phi, theta, psi = 0
         """
         ax, ay, az = toValue(acceleration)
         mx, my, mz = toValue(magneticField)
@@ -23,7 +25,7 @@ class Euler(object):
         mHor = q.vecTransformation(magneticField)
         mxh, myh, _ = toValue(mHor)
         
-        psi = -atan2(myh, mxh) - DECANGLE
+        psi = atan2(myh, mxh) - DECANGLE
         
         self.values = toVector(phi, theta, psi)
 

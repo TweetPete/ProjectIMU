@@ -2,16 +2,14 @@ import sys, getopt
 from datetime import datetime
 from Strapdown import Strapdown
 from MathLib import toVector, toValue, runningAverage
-from Settings import g
 from numpy import rad2deg
-from Kalman import Kalman, KalmanPVO
+from Kalman import KalmanPVO
 from Quaternion import Quaternion
-from GeoLib import ell2xyz
 from Position import EllipsoidPosition
 from Euler import Euler
 
 sys.path.append('.')
-import RTIMU, os.path, threading, NMEA_stream
+import RTIMU, os.path, threading, NMEA_stream, math
 
 SETTINGS_FILE = "RTIMULib_peter"
 
@@ -51,12 +49,14 @@ acc_mean = toVector(0.,0.,0.)
 mag_mean = toVector(0.,0.,0.)
 gyroBias = toVector(0.,0.,0.)
 pos_mean = s.getPosition()
-dt_mean = 0.0
+dt_mean = 0.01
 t_old = 0.
 
 i = 1
 j = 1
-init_time = 10 #sek
+init_time = 600 # seconds
+
+total_field = 49.5898 # magnitude of magnetic flux
 
 while True:
     if imu.IMURead():
@@ -67,7 +67,8 @@ while True:
         accel = data["accel"]   
         accel_v = toVector(accel[0],accel[1],accel[2])*-9.80665 -accelBias
         mag = data["compass"]
-        mag_v = toVector(mag[0],mag[1],mag[2])
+        c_norm = math.sqrt(mag[0]**2+mag[1]**2+mag[2]**2)
+        mag_v = toVector(total_field*(mag[1]/c_norm),total_field*(mag[0]/c_norm),total_field*(mag[2]/c_norm))
         t = data["timestamp"]/1e6
         delta = t - t_old
         t_old = t
@@ -97,30 +98,30 @@ while True:
             s.position.update(s.velocity, dt_mean)
             
             K.timeUpdate(accel_v, s.quaternion, dt_mean)
-            if SatObs.new or i%10 == 0: 
+            if (SatObs.new and SatObs.sats >= 6) or i%10 == 0: 
                 K.measurementUpdate(s.quaternion, s.position, s.velocity, SatObs.pos, SatObs.vel, accel_v, mag_v, SatObs.new)
                 errorQuat = Quaternion(K.oriError)
                 s.quaternion = errorQuat * s.quaternion
                 s.position.correct(K.posError)
                 s.velocity.correct(K.velError)  
                 gyroBias = gyroBias + K.gyrError
-                accelBias = accelBias + K.accError
+                accelBias = accelBias - K.accError
                 K.resetState()  
                 SatObs.new = False
             
-            if i%50 == 0: #print area
+            ##################################################### print area
+            if i%50 == 0:
                 phi, theta, psi = toValue(rad2deg(s.getOrientation()))
                 vx, vy, vz = toValue(s.getVelocity())
                 x, y, z = toValue(s.getPosition())
+                ex,ey, ez = toValue(SatObs.PDOP)
                 time_str = '%.6f, %3.1f' % (t, 1/dt_mean)
                 euler_str = '%9.3f, %9.3f, %9.3f' % (phi, theta, psi)
                 velo_str = '%2.3f, %2.3f, %2.3f' % ( vx, vy, vz)
                 pos_str = '%3.7f, %3.7f, %4.3f' % ( rad2deg(x), rad2deg(y), z)
-                print(time_str + ', ' + euler_str + ', ' + velo_str + ', ' + pos_str)
-#                 print('Roll: %9.3f, Pitch: %9.3f, Yaw: %9.3f' % (phi, theta, psi))
-#                 print(s.position)
-#                 print(s.velocity)
-#                 print('dt mean: {:3.1f}Hz'.format(1/dt_mean))
+                sat_str = '%.2f, %.2f, %.2f, %2i' % ( ex,ey,ez,SatObs.sats)
+                print(time_str + ', ' + euler_str + ', ' + velo_str + ', ' + pos_str + ', ' +sat_str)
+            #####################################################
 
         if i != 1:
             dt_mean = runningAverage(dt_mean, delta, 1)

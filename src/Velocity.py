@@ -1,12 +1,10 @@
-""" class Velocity propagates the velocity based on previous velocity and acceleration
-"""
 from MathLib import toVector, toValue
 from Settings import G
 
 class Velocity(object):
-    
     def __init__(self, vector=toVector(0., 0., 0.)):
-        """ initialized by velocity-vector
+        """ class Velocity propagates the velocity based on acceleration
+            initialized by velocity-vector
             units in m/s
         """
         self.values = vector
@@ -27,7 +25,8 @@ class Velocity(object):
         
 def calcVelocity(p1,p0,t1,t0):
     """ calculates a velocity-vector based on the positional change and the passed time 
-        p1, p0 are 3x1 vectors - t1, t0 is a scalar
+        p1, p0 are 3x1 position-vectors - t1, t0 is the time as a scalar
+        unit of return value depends on units of arguments
     """
     dp = p1 - p0
     dt = t1 - t0
